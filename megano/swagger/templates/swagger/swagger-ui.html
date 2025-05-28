@@ -1,0 +1,30 @@
+{% extends "swagger/base.html" %}
+{% load static %}
+
+{% block title %}
+  Swagger UI
+{% endblock %}
+
+{% block body %}
+  <link rel="stylesheet" type="text/css" href="{% static 'swagger-ui/swagger-ui.css' %}" />
+  <script src="{% static 'swagger-ui/swagger-ui-bundle.js' %}"></script>
+  <script src="{% static 'swagger-ui/swagger-ui-standalone-preset.js' %}"></script>
+
+  <div id="swagger-ui"></div>
+
+  <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        url: "{{ swagger_url }}",  // динамический URL swagger.yaml
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "StandaloneLayout"
+      });
+      window.ui = ui;
+    };
+  </script>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "swagger/base.html" %}
+
+{% block title %}
+  upload swagger
+{% endblock %}
+
+{% block body %}
+  <h2>Загрузить swagger.yaml файл</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Загрузить</button>
+  </form>
+{% endblock %}
