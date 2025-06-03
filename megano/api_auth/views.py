@@ -1,15 +1,19 @@
+import logging
+
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from rest_framework.request import Request
 
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.views import APIView
 
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResponse
 
 from .models import Profile
-from .serializers import SignInSerializer, SignUpSerializer, JsonStringSerializer
+from .serializers import SignInSerializer, SignUpSerializer, JsonStringSerializer, ProfileSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class SignUpView(APIView):
@@ -42,13 +46,29 @@ class SignUpView(APIView):
                     user = authenticate(request, username=username, password=password)
                     if user is not None:
                         login(request, user)
+                    logger.info(
+                        f"User created: {username}",
+                        extra={"tags": ["registration"]}
+                    )
                     return Response(status=status.HTTP_201_CREATED)
                 except Exception as e:
-                    print(e)
+                    logger.error(
+                        f"Registration error: {str(e)}",
+                        exc_info=True,  # автоматически добавит traceback
+                        extra={"tags": ["registration_error"]}
+                    )
                     return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             else:
+                logger.error(
+                    f"Validation error: {serializer.errors}",
+                    extra={"tags": ["validation_error"]}
+                )
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
+            logger.warning(
+                f"Invalid wrapper data: {wrapper_serializer.errors}",
+                extra={"tags": ["invalid_input"]}
+            )
             return Response(wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -75,12 +95,28 @@ class SignInView(APIView):
                 user = authenticate(request, username=username, password=password)
                 if user is not None:
                     login(request, user)
+                    logger.info(
+                        f"User logged in: {username}",
+                        extra={"tags": ["auth"]}
+                    )
                     return Response(status=status.HTTP_201_CREATED)
                 else:
+                    logger.warning(
+                        "Authentication failed",
+                        extra={"tags": ["auth_failed"], "username": username}
+                    )
                     return Response({'detail': 'Authentication failed'}, status=status.HTTP_401_UNAUTHORIZED)
             else:
+                logger.error(
+                    f"Validation error: {serializer.errors}",
+                    extra={"tags": ["validation_error"]}
+                )
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
+            logger.warning(
+                f"Invalid wrapper data: {wrapper_serializer.errors}",
+                extra={"tags": ["invalid_input"]}
+            )
             return Response(wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -94,3 +130,45 @@ class SignOutView(APIView):
     def post(self, request: Request):
         logout(request)
         return Response(status=status.HTTP_200_OK)
+
+
+class ProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProfileSerializer
+
+    def get(self, request):
+        profile = Profile.objects.select_related("user", "avatar").get(user=request.user.pk)
+        serializer = self.serializer_class(profile)
+        logger.debug("GET profile data: %s", serializer.data)
+        return Response(serializer.data)
+
+    def post(self, request):
+        logger.debug("POST data: %s", request.data)
+        serializer = self.serializer_class(data=request.data, partial=True)
+        if serializer.is_valid():
+            logger.debug("Serializer validated data: %s", serializer.validated_data)
+            profile = Profile.objects.select_related("user", "avatar").get(user=request.user.pk)
+            user = profile.user
+            user_data = serializer.validated_data.get('user', {})
+            email = user_data.get('email')
+            logger.debug("Email from request: %s", email)
+            logger.debug("Current user email: %s", user.email)
+            if email is not None and email != user.email:
+                user.email = email
+                user.save()
+                logger.info("User email updated to: %s", email)
+            phone = serializer.validated_data.get('phone')
+            fullname = serializer.validated_data.get('fullName')
+            if phone and fullname is not None and (phone != profile.phone or fullname != profile.fullName):
+                profile.phone = phone
+                profile.fullName = fullname
+                profile.save()
+                logger.info("Profile updated: fullName=%s, phone=%s", fullname, phone)
+            return Response(serializer.data)
+        else:
+            logger.error(
+                "Profile update error: %s",
+                serializer.errors,
+                extra={"user": request.user.pk, "data": request.data}
+            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
