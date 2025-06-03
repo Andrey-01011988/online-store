@@ -11,11 +11,13 @@ from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResponse
 
 from .models import Profile
-from .serializers import SignInSerializer, SignUpSerializer, JsonStringSerializer, ProfileSerializer
+from .serializers import SignInSerializer, SignUpSerializer, JsonStringSerializer, ProfileSerializer, PasswordSerializer
 
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    tags=["auth"])
 class SignUpView(APIView):
     serializer_class = SignUpSerializer
 
@@ -72,6 +74,8 @@ class SignUpView(APIView):
             return Response(wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["auth"])
 class SignInView(APIView):
     serializer_class = SignInSerializer
 
@@ -120,6 +124,8 @@ class SignInView(APIView):
             return Response(wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["auth"])
 @extend_schema_view(
     post=extend_schema(
         description="Выход пользователя из системы",
@@ -132,16 +138,34 @@ class SignOutView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    tags=["profile"])
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProfileSerializer
 
+    @extend_schema(
+        request=ProfileSerializer,
+        responses={
+            200: OpenApiResponse(description='OK', response=None),
+            400: OpenApiResponse(description='Validation error', response=None),
+        },
+        description="Получение профиля пользователя"
+    )
     def get(self, request):
         profile = Profile.objects.select_related("user", "avatar").get(user=request.user.pk)
         serializer = self.serializer_class(profile)
         logger.debug("GET profile data: %s", serializer.data)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=ProfileSerializer,
+        responses={
+            200: OpenApiResponse(description='OK', response=None),
+            400: OpenApiResponse(description='Validation error', response=None),
+        },
+        description="Обновление профиля пользователя"
+    )
     def post(self, request):
         logger.debug("POST data: %s", request.data)
         serializer = self.serializer_class(data=request.data, partial=True)
@@ -168,6 +192,43 @@ class ProfileView(APIView):
         else:
             logger.error(
                 "Profile update error: %s",
+                serializer.errors,
+                extra={"user": request.user.pk, "data": request.data}
+            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=["profile"])
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PasswordSerializer
+
+    @extend_schema(
+        request=PasswordSerializer,
+        responses={
+            200: OpenApiResponse(description='OK', response=None),
+            400: OpenApiResponse(description='Validation error', response=None),
+        },
+        description="Изменение пароля пользователя"
+    )
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        logger.debug("POST data: %s", request.data)
+        if serializer.is_valid():
+            user = request.user
+            new_password = serializer.validated_data.get('newPassword')
+            if not user.check_password(new_password):
+                user.set_password(new_password)
+                user.save()
+                logger.info("Password changed for user: %s", user.username)
+                return Response({"detail": "Пароль успешно изменён"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"newPassword": ["Новый пароль не должен совпадать с текущим"]},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.error(
+                "Password change error: %s",
                 serializer.errors,
                 extra={"user": request.user.pk, "data": request.data}
             )

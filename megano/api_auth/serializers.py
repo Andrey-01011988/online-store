@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from .models import Avatar, Profile
@@ -11,6 +12,7 @@ class JsonStringSerializer(serializers.Serializer):
     Принимает тело запроса в виде form-data с одним ключом,
     где ключ — это JSON-строка с нужными полями.
     """
+
     def to_internal_value(self, data):
         if isinstance(data, dict) and len(data) == 1:
             json_str = next(iter(data.keys()))
@@ -24,9 +26,11 @@ class JsonStringSerializer(serializers.Serializer):
     def to_representation(self, instance):
         return instance
 
+
 class SignInSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255)
     password = serializers.CharField(max_length=255)
+
 
 class SignUpSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255)
@@ -56,3 +60,18 @@ class ProfileSerializer(serializers.Serializer):
             return int(value)
         except (ValueError, TypeError):
             raise serializers.ValidationError("Неверный формат номера телефона")
+
+
+class PasswordSerializer(serializers.Serializer):
+    currentPassword = serializers.CharField(max_length=255)
+    newPassword = serializers.CharField(max_length=255)
+
+    def validate_currentPassword(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Текущий пароль неверен")
+        return value
+
+    def validate_newPassword(self, value):
+        validate_password(value)
+        return value
