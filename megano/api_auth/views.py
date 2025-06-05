@@ -1,10 +1,9 @@
 import logging
-from urllib import request
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from rest_framework.request import Request
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.views import APIView
@@ -168,8 +167,7 @@ class ProfileView(APIView):
     )
     def get(self, request):
         profile = (
-            Profile.objects.select_related("user")
-            .prefetch_related("avatars")
+            Profile.objects.select_related("user", "avatar")
             .get(user=request.user)
         )
         serializer = self.serializer_class(profile, context={"request": request})
@@ -187,8 +185,7 @@ class ProfileView(APIView):
     def post(self, request):
         logger.debug("POST data: %s", request.data)
         profile = (
-            Profile.objects.select_related("user")
-            .prefetch_related("avatars")
+            Profile.objects.select_related("user", "avatar")
             .get(user=request.user)
         )
         serializer = self.serializer_class(
@@ -284,6 +281,8 @@ class ProfileAvatarUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        profile = request.user.profile
+        avatar = getattr(profile, "avatar", None)
 
         logger.debug(
             "Profile_avatar_data: %s, extra=%s",
@@ -301,8 +300,14 @@ class ProfileAvatarUpdateView(APIView):
         if serializer.is_valid():
 
             logger.debug("Serializer validated data: %s", serializer.validated_data)
-            avatar = serializer.save()
-            logger.info("Avatar updated: %s", avatar)
+            if avatar:
+                avatar.src.delete(save=False)
+                avatar.src = serializer.validated_data["src"]
+                avatar.alt = serializer.validated_data["alt"]
+                avatar.save()
+                logger.info("Avatar updated: %s", avatar)
+            else:
+                serializer.save(profile=profile)
             return Response(
                 {"detail": "Аватар успешно обновлён"}, status=status.HTTP_200_OK
             )

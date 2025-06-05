@@ -9,8 +9,8 @@ def user_avatar_directory_path(instance: "Avatar", filename: str) -> str:
 class Avatar(models.Model):
     """Модель для хранения аватара пользователя"""
 
-    profile = models.ForeignKey(
-        "Profile", on_delete=models.CASCADE, related_name="avatars"
+    profile = models.OneToOneField(
+        "Profile", on_delete=models.CASCADE, related_name="avatar"
     )
 
     src = models.ImageField(

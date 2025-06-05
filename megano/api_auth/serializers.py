@@ -59,12 +59,12 @@ class ProfileSerializer(serializers.Serializer):
     def get_avatar(self, obj):
         # Получаем последний аватар пользователя
         # print("ProfileSerializer get_avatar obj:",obj)
-        last_avatar = obj.avatars.order_by("-id").first()
-        if last_avatar:
+        avatar = getattr(obj, "avatar", None)
+        if avatar:
             request = self.context.get("request")
             return {
-                "src": request.build_absolute_uri(last_avatar.src.url),
-                "alt": last_avatar.alt,
+                "src": request.build_absolute_uri(avatar.src.url),
+                "alt": avatar.alt,
             }
         return None
 
