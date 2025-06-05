@@ -1,10 +1,11 @@
 import json
 
-from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
+from PIL import Image
 
-from .models import Avatar, Profile
+from .models import Avatar
 
 
 class JsonStringSerializer(serializers.Serializer):
@@ -50,10 +51,22 @@ class AvatarSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.Serializer):
-    avatar = AvatarSerializer(allow_null=True)
-    email = serializers.EmailField(source='user.email', required=False)
+    avatar = serializers.SerializerMethodField()
+    email = serializers.EmailField(source="user.email", required=False)
     fullName = serializers.CharField(required=False)
     phone = serializers.CharField(required=False)
+
+    def get_avatar(self, obj):
+        # Получаем последний аватар пользователя
+        # print("ProfileSerializer get_avatar obj:",obj)
+        last_avatar = obj.avatars.order_by("-id").first()
+        if last_avatar:
+            request = self.context.get("request")
+            return {
+                "src": request.build_absolute_uri(last_avatar.src.url),
+                "alt": last_avatar.alt,
+            }
+        return None
 
     def validate_phone(self, value):
         try:
@@ -67,7 +80,7 @@ class PasswordSerializer(serializers.Serializer):
     newPassword = serializers.CharField(max_length=255)
 
     def validate_currentPassword(self, value):
-        user = self.context['request'].user
+        user = self.context["request"].user
         if not user.check_password(value):
             raise serializers.ValidationError("Текущий пароль неверен")
         return value
@@ -75,3 +88,31 @@ class PasswordSerializer(serializers.Serializer):
     def validate_newPassword(self, value):
         validate_password(value)
         return value
+
+
+class AvatarUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Avatar
+        fields = ["src", "alt"]
+        extra_kwargs = {
+            "src": {"required": True},
+            "profile": {"write_only": True},
+        }
+
+    def validate_src(self, value):
+        try:
+            img = Image.open(value)
+            img.verify()  # Проверка целостности изображения
+        except Exception:
+            raise ValidationError("Загруженный файл не является валидным изображением")
+        return value
+
+    def get_src(self, obj):
+        request = self.context.get("request")
+        if obj.src and hasattr(obj.src, "url"):
+            return request.build_absolute_uri(obj.src.url)
+        return None
+
+    def create(self, validated_data):
+        validated_data["profile"] = self.context["request"].user.profile
+        return super().create(validated_data)
