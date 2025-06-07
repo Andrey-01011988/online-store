@@ -44,8 +44,9 @@ INSTALLED_APPS = [
 
     'frontend',
 
-    'api_auth.apps.AuthConfig',
     'swagger.apps.SwaggerConfig',
+    'api_auth.apps.AuthConfig',
+    'api_product.apps.ApiProductConfig',
 ]
 
 MIDDLEWARE = [
