@@ -1,5 +1,12 @@
 from django.urls import path
 
-urlpatterns = [
+from .views import ProductDetailAPIView, ReviewAPIView, TagsAPIListView
 
+
+app_name = "api_product"
+
+urlpatterns = [
+    path("product/<int:id>", ProductDetailAPIView.as_view(), name="product_detail"),
+    path("product/<int:id>/reviews", ReviewAPIView.as_view(), name="product_review"),
+    path("tags", TagsAPIListView.as_view(), name="tags"),
 ]
