@@ -11,7 +11,7 @@ class ImageSerializer(serializers.ModelSerializer):
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = "id", "title",
+        fields = "id", "name",
 
 
 class ReviewSerializer(serializers.ModelSerializer):

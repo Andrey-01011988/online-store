@@ -36,6 +36,9 @@ class Product(models.Model):
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
 
+    def __str__(self):
+        return self.title
+
 
 class Category(models.Model):
     """
@@ -57,6 +60,9 @@ class Category(models.Model):
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
+
+    def __str__(self):
+        return self.title
 
 
 def product_image_directory_path(instance: "ProductImage", filename):
@@ -116,11 +122,14 @@ class Tag(models.Model):
 
     objects = models.Manager() # Определяет стандартный менеджер модели
 
-    title = models.CharField(max_length=128, verbose_name="Название")
+    name = models.CharField(max_length=128, verbose_name="Название")
 
     class Meta:
         verbose_name = "Тег"
         verbose_name_plural = "Теги"
+
+    def __str__(self):
+        return self.name
 
 
 class Review(models.Model):
@@ -152,6 +161,9 @@ class Review(models.Model):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
 
+    def __str__(self):
+        return f"{self.author} {self.product}"
+
 
 class Specification(models.Model):
     """
@@ -172,3 +184,6 @@ class Specification(models.Model):
     class Meta:
         verbose_name = "Характеристика"
         verbose_name_plural = "Характеристики"
+
+    def __str__(self):
+        return f"{self.product}, {self.name}, {self.value}"
