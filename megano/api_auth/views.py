@@ -301,7 +301,6 @@ class ProfileAvatarUpdateView(APIView):
 
             logger.debug("Serializer validated data: %s", serializer.validated_data)
             if avatar:
-                avatar.src.delete(save=False)
                 avatar.src = serializer.validated_data["src"]
                 avatar.alt = serializer.validated_data["alt"]
                 avatar.save()

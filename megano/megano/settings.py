@@ -47,6 +47,9 @@ INSTALLED_APPS = [
     'swagger.apps.SwaggerConfig',
     'api_auth.apps.AuthConfig',
     'api_product.apps.ApiProductConfig',
+
+
+    'django_cleanup.apps.CleanupConfig',
 ]
 
 MIDDLEWARE = [
