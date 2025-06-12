@@ -8,20 +8,26 @@ class Product(models.Model):
     Модель товара
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     category = models.ForeignKey(
-            "Category",
-            on_delete=models.CASCADE,
-            related_name="products",
-            verbose_name="Категория",
-        )
-    price = models.DecimalField(default=0, decimal_places=2, max_digits=10, verbose_name="Цена")
+        "Category",
+        on_delete=models.CASCADE,
+        related_name="products",
+        verbose_name="Категория",
+    )
+    price = models.DecimalField(
+        default=0, decimal_places=2, max_digits=10, verbose_name="Цена"
+    )
     count = models.PositiveIntegerField(default=0, verbose_name="Количество")
-    date = models.DateTimeField(blank=True, null=True, auto_now_add=True, verbose_name="Дата создания")
+    date = models.DateTimeField(
+        blank=True, null=True, auto_now_add=True, verbose_name="Дата создания"
+    )
     title = models.CharField(max_length=128, verbose_name="Название")
     description = models.TextField(blank=True, null=True, verbose_name="Описание")
-    fullDescription = models.TextField(blank=True, null=True, verbose_name="Полное описание")
+    fullDescription = models.TextField(
+        blank=True, null=True, verbose_name="Полное описание"
+    )
     freeDelivery = models.BooleanField(default=True, verbose_name="Бесплатная доставка")
     tags = models.ManyToManyField(
         "Tag",
@@ -29,8 +35,12 @@ class Product(models.Model):
         related_name="products",
         verbose_name="Теги",
     )
-    reviews_count = models.PositiveIntegerField(default=0, verbose_name="Количество отзывов")
-    rating = models.DecimalField(default=0, decimal_places=2, max_digits=10, verbose_name="Рейтинг")
+    reviews_count = models.PositiveIntegerField(
+        default=0, verbose_name="Количество отзывов"
+    )
+    rating = models.DecimalField(
+        default=0, decimal_places=2, max_digits=10, verbose_name="Рейтинг"
+    )
 
     class Meta:
         verbose_name = "Товар"
@@ -45,7 +55,7 @@ class Category(models.Model):
     Модель категории товара
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     title = models.CharField(max_length=128, verbose_name="Название")
     parent = models.ForeignKey(
@@ -78,7 +88,7 @@ class CategoryImage(models.Model):
     Модель изображения категории
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     category = models.ForeignKey(
         "Category",
@@ -86,8 +96,10 @@ class CategoryImage(models.Model):
         related_name="images",
         verbose_name="Категория",
     )
-    src = models.ImageField(upload_to=category_image_directory_path, verbose_name="Изображение")
-    alt = models.CharField(default="image", max_length=64,verbose_name="Описание")
+    src = models.ImageField(
+        upload_to=category_image_directory_path, verbose_name="Изображение"
+    )
+    alt = models.CharField(default="image", max_length=64, verbose_name="Описание")
 
     class Meta:
         verbose_name = "Изображение"
@@ -99,7 +111,7 @@ class ProductImage(models.Model):
     Модель изображения товара
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     product = models.ForeignKey(
         "Product",
@@ -107,8 +119,10 @@ class ProductImage(models.Model):
         related_name="images",
         verbose_name="Товар",
     )
-    src = models.ImageField(upload_to=product_image_directory_path, verbose_name="Изображение")
-    alt = models.CharField(default="image", max_length=64,verbose_name="Описание")
+    src = models.ImageField(
+        upload_to=product_image_directory_path, verbose_name="Изображение"
+    )
+    alt = models.CharField(default="image", max_length=64, verbose_name="Описание")
 
     class Meta:
         verbose_name = "Изображение"
@@ -120,7 +134,7 @@ class Tag(models.Model):
     Модель тега
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     name = models.CharField(max_length=128, verbose_name="Название")
 
@@ -137,7 +151,7 @@ class Review(models.Model):
     Модель отзыва
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     product = models.ForeignKey(
         "Product",
@@ -150,16 +164,26 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name="reviews",
         verbose_name="Пользователь",
-        )
+    )
     author = models.CharField(max_length=128, verbose_name="Автор")
     email = models.EmailField(verbose_name="Email")
     text = models.TextField(verbose_name="Текст")
-    rate = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], default=1, verbose_name="Оценка")
+    rate = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        default=1,
+        verbose_name="Оценка",
+    )
     date = models.DateTimeField(auto_now_add=True, verbose_name="Дата")
 
     class Meta:
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "user"], name="unique_product_user_review"
+            )
+        ]
 
     def __str__(self):
         return f"{self.author} {self.product}"
@@ -170,7 +194,7 @@ class Specification(models.Model):
     Модель характеристик товара
     """
 
-    objects = models.Manager() # Определяет стандартный менеджер модели
+    objects = models.Manager()  # Определяет стандартный менеджер модели
 
     product = models.ForeignKey(
         "Product",
