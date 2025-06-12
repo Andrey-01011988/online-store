@@ -80,7 +80,7 @@ def product_image_directory_path(instance: "ProductImage", filename):
 
 
 def category_image_directory_path(instance: "Category", filename):
-    return f"categories/{instance.title}_{instance.id}/{filename}"
+    return f"categories/{instance.category.title}_{instance.category.id}/{filename}"
 
 
 class CategoryImage(models.Model):
@@ -127,6 +127,9 @@ class ProductImage(models.Model):
     class Meta:
         verbose_name = "Изображение"
         verbose_name_plural = "Изображения"
+
+    def __str__(self):
+        return self.src.url
 
 
 class Tag(models.Model):
