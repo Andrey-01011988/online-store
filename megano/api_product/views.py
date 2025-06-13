@@ -2,7 +2,7 @@ import logging
 
 from django.db import IntegrityError
 
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework.request import Request
@@ -12,7 +12,6 @@ from drf_spectacular.utils import extend_schema
 
 from .models import Product, Review, Tag
 from .serializers import ProductDetailSerializer, ReviewSerializer, TagSerializer
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +35,8 @@ class ProductDetailAPIView(RetrieveAPIView):
 
 @extend_schema(tags=["product"], responses=ReviewSerializer)
 class ReviewAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request: Request, id: int):
         logger.debug(
             "ReviewAPIView POST: product_id=%s, data=%s, user=%s",

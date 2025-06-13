@@ -196,6 +196,9 @@ class SpecificationAdmin(admin.ModelAdmin):
     ordering = ("id",)
     search_fields = ("name", "value", "product__title")
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("product")
+
     def product_link(self, obj):
         if obj.product:
             url = reverse("admin:api_product_product_change", args=[obj.product.id])

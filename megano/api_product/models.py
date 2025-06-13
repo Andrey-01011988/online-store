@@ -213,4 +213,4 @@ class Specification(models.Model):
         verbose_name_plural = "Характеристики"
 
     def __str__(self):
-        return f"{self.product}, {self.name}, {self.value}"
+        return f"{self.name}, {self.value}"
