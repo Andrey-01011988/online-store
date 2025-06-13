@@ -90,10 +90,10 @@ class CategoryImage(models.Model):
 
     objects = models.Manager()  # Определяет стандартный менеджер модели
 
-    category = models.ForeignKey(
+    category = models.OneToOneField(
         "Category",
         on_delete=models.CASCADE,
-        related_name="images",
+        related_name="image",
         verbose_name="Категория",
     )
     src = models.ImageField(
@@ -104,6 +104,9 @@ class CategoryImage(models.Model):
     class Meta:
         verbose_name = "Изображение"
         verbose_name_plural = "Изображения"
+
+    def __str__(self):
+        return self.src.url
 
 
 class ProductImage(models.Model):

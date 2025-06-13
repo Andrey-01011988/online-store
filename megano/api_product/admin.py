@@ -14,10 +14,23 @@ from .models import (
 )
 
 
-class CategoryImageInline(admin.TabularInline):  # или admin.StackedInline для другого вида
+class CategoryImageInline(
+    admin.TabularInline
+):  # или admin.StackedInline для другого вида
     model = CategoryImage
     extra = 1  # Количество пустых форм для добавления
-    fields = ('src', 'alt')  # Поля, которые можно редактировать
+    fields = ("src", "alt", "image_preview")  # Поля, которые можно редактировать
+    readonly_fields = ("image_preview",)
+
+    def image_preview(self, obj):
+        if hasattr(obj, "src") and obj.src:
+            return format_html(
+                '<img src="{}" style="max-height: 50px; max-width: 50px;" />',
+                obj.src.url,
+            )
+        return "Нет изображения"
+
+    image_preview.short_description = "Превью"
 
 
 @admin.register(Product)
@@ -32,7 +45,7 @@ class ProductAdmin(admin.ModelAdmin):
         "freeDelivery",
         "rating",
         "reviews_count",
-        "tags_display"
+        "tags_display",
     )
     list_display_links = ("id", "title")
     ordering = ("id",)
@@ -47,7 +60,9 @@ class ProductAdmin(admin.ModelAdmin):
             Prefetch("tags", queryset=Tag.objects.only("name")),
             Prefetch("images", queryset=ProductImage.objects.only("src", "product")),
             Prefetch("reviews", queryset=Review.objects.only("product", "rate")),
-            Prefetch("specifications", queryset=Specification.objects.only("product", "name"))
+            Prefetch(
+                "specifications", queryset=Specification.objects.only("product", "name")
+            ),
         )
         return queryset
 
@@ -56,16 +71,18 @@ class ProductAdmin(admin.ModelAdmin):
             url = reverse("admin:api_product_category_change", args=[obj.category.id])
             return format_html('<a href="{}">{}</a>', url, obj.category.title)
         return "-"
+
     category_link.short_description = "Категория"
 
     def tags_display(self, obj):
         return ", ".join([tag.name for tag in obj.tags.all()])
+
     tags_display.short_description = "Теги"
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "parent_link", "images_count", "products_count")
+    list_display = ("id", "title", "parent_link", "image_preview", "products_count")
     list_display_links = ("id", "title")
     ordering = ("id",)
     search_fields = ("title",)
@@ -75,7 +92,6 @@ class CategoryAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         queryset = Category.objects.select_related("parent").annotate(
-            images_count=Count("images", distinct=True),
             products_count=Count("products", distinct=True)
         )
         return queryset
@@ -85,14 +101,22 @@ class CategoryAdmin(admin.ModelAdmin):
             url = reverse("admin:api_product_category_change", args=[obj.parent.id])
             return format_html('<a href="{}">{}</a>', url, obj.parent.title)
         return "-"
+
     parent_link.short_description = "Родительская категория"
 
-    def images_count(self, obj):
-        return obj.images_count
-    images_count.short_description = "Изображения"
+    def image_preview(self, obj):
+        if hasattr(obj, "image") and obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 50px; max-width: 50px;" />',
+                obj.image.src.url,
+            )
+        return "Нет изображения"
+
+    image_preview.short_description = "Превью"
 
     def products_count(self, obj):
         return obj.products_count
+
     products_count.short_description = "Товары"
 
 
@@ -113,15 +137,17 @@ class ProductImageAdmin(admin.ModelAdmin):
             url = reverse("admin:api_product_product_change", args=[obj.product.id])
             return format_html('<a href="{}">{}</a>', url, obj.product.title)
         return "-"
+
     product_link.short_description = "Товар"
 
     def thumbnail_preview(self, obj):
         if obj.src:
             return format_html(
                 '<img src="{}" style="max-height: 50px; max-width: 50px;" />',
-                obj.src.url
+                obj.src.url,
             )
         return "-"
+
     thumbnail_preview.short_description = "Превью"
 
 
@@ -134,12 +160,11 @@ class TagAdmin(admin.ModelAdmin):
     list_per_page = 100
 
     def get_queryset(self, request):
-        return super().get_queryset(request).annotate(
-            products_count=Count("products")
-        )
+        return super().get_queryset(request).annotate(products_count=Count("products"))
 
     def products_count(self, obj):
         return obj.products_count
+
     products_count.short_description = "Товары"
     products_count.admin_order_field = "products_count"
 
@@ -153,7 +178,7 @@ class ReviewAdmin(admin.ModelAdmin):
         "rate",
         "date",
         "user_verbose",
-        "short_text"
+        "short_text",
     )
     list_display_links = ("id", "author")
     ordering = ("-date",)
@@ -164,12 +189,22 @@ class ReviewAdmin(admin.ModelAdmin):
     raw_id_fields = ("product", "user")
 
     def get_queryset(self, request):
-        queryset = super().get_queryset(request).select_related(
-            "product", "user"
-        ).only(
-            "id", "author", "rate", "date", "text",
-            "product__id", "product__title",
-            "user__id", "user__username", "user__first_name"
+        queryset = (
+            super()
+            .get_queryset(request)
+            .select_related("product", "user")
+            .only(
+                "id",
+                "author",
+                "rate",
+                "date",
+                "text",
+                "product__id",
+                "product__title",
+                "user__id",
+                "user__username",
+                "user__first_name",
+            )
         )
         return queryset
 
@@ -178,14 +213,17 @@ class ReviewAdmin(admin.ModelAdmin):
             url = reverse("admin:api_product_product_change", args=[obj.product.id])
             return format_html('<a href="{}">{}</a>', url, obj.product.title)
         return "-"
+
     product_link.short_description = "Товар"
 
     def user_verbose(self, obj):
         return obj.user.first_name or obj.user.username
+
     user_verbose.short_description = "Пользователь"
 
     def short_text(self, obj):
         return obj.text[:50] + "..." if len(obj.text) > 50 else obj.text
+
     short_text.short_description = "Текст"
 
 

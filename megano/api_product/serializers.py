@@ -1,23 +1,37 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, Tag, Review, Specification
+from .models import (
+    CategoryImage,
+    Product,
+    ProductImage,
+    Tag,
+    Review,
+    Specification,
+    Category,
+)
 
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = "src", "alt",
+        fields = (
+            "src",
+            "alt",
+        )
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = "id", "name",
+        fields = (
+            "id",
+            "name",
+        )
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     date = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
     email = serializers.EmailField()
-    rate = serializers.IntegerField(min_value = 1, max_value = 5)
+    rate = serializers.IntegerField(min_value=1, max_value=5)
 
     class Meta:
         model = Review
@@ -27,7 +41,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 class SpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specification
-        exclude = "id", "product",
+        exclude = (
+            "id",
+            "product",
+        )
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -39,4 +56,42 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        exclude = "reviews_count",
+        exclude = ("reviews_count",)
+
+
+class CategoryImageSerializer(serializers.ModelSerializer):
+    src = serializers.ImageField()
+    alt = serializers.CharField()
+
+    class Meta:
+        model = CategoryImage
+        fields = (
+            "src",
+            "alt",
+        )
+
+
+class SubcategorySerializer(serializers.ModelSerializer):
+    image = CategoryImageSerializer()
+
+    class Meta:
+        model = Category
+        fields = (
+            "id",
+            "title",
+            "image",
+        )
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    image = CategoryImageSerializer(read_only=True)
+    subcategories = SubcategorySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = (
+            "id",
+            "title",
+            "image",
+            "subcategories",
+        )
