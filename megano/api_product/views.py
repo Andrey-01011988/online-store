@@ -1,8 +1,9 @@
 import logging
 
 from django.db import IntegrityError
+from django.db.models import Prefetch
 
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework.request import Request
@@ -10,8 +11,13 @@ from rest_framework.response import Response
 
 from drf_spectacular.utils import extend_schema
 
-from .models import Product, Review, Tag
-from .serializers import ProductDetailSerializer, ReviewSerializer, TagSerializer
+from .models import Product, Review, Tag, Category
+from .serializers import (
+    ProductDetailSerializer,
+    ReviewSerializer,
+    TagSerializer,
+    CategorySerializer,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +42,8 @@ class ProductDetailAPIView(RetrieveAPIView):
 
 @extend_schema(tags=["product"], responses=ReviewSerializer)
 class ReviewAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request: Request, id: int):
         logger.debug(
             "ReviewAPIView POST: product_id=%s, data=%s, user=%s",
@@ -66,6 +74,7 @@ class ReviewAPIView(APIView):
             )
 
 
+@extend_schema(tags=["tags"], responses=TagSerializer)
 class TagsAPIListView(ListAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -74,4 +83,22 @@ class TagsAPIListView(ListAPIView):
         logger.debug("TagsAPIListView GET: user=%s", request.user)
         response = super().get(request, *args, **kwargs)
         logger.info("TagsAPIListView response: %s", response.data)
+        return response
+
+
+@extend_schema(tags=["catalog"], responses=CategorySerializer)
+class CategoriesAPIListView(ListAPIView):
+    queryset = (
+        Category.objects.filter(parent=None)
+        .select_related("image")
+        .prefetch_related(
+            Prefetch("subcategories", queryset=Category.objects.select_related("image"))
+        )
+    )
+    serializer_class = CategorySerializer
+
+    def get(self, request, *args, **kwargs):
+        logger.debug("CategoriesAPIListView GET: user=%s", request.user)
+        response = super().get(request, *args, **kwargs)
+        logger.info("CategoriesAPIListView response: %s", response.data)
         return response
