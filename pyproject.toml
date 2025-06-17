@@ -18,6 +18,11 @@ dependencies = [
     "django-cleanup (>=9.0.0,<10.0.0)",
 ]
 
+[tool.poetry.group.linters]
+optional = true
+
+[tool.poetry.group.linters.dependencies]
+black = "24.*"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
