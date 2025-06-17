@@ -48,7 +48,7 @@ files = [
 
 [package.source]
 type = "file"
-url = "diploma-frontend/dist/diploma-frontend-0.6.tar.gz"
+url = "diploma-frontend/arch/diploma-frontend-0.6.tar.gz"
 
 [[package]]
 name = "django"
@@ -571,4 +571,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "db03903ef36ecf96e7a0d3ac0f503bd0975c872ff4aeccf82a009560710c0f48"
+content-hash = "641af18273fbda96dbb740fd1a9711923b1e6e8364697fe54efe8e209e250cb2"
