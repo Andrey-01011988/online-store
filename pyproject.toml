@@ -12,13 +12,37 @@ dependencies = [
     "djangorestframework (>=3.16.0,<4.0.0)",
     "setuptools (>=80.9.0,<81.0.0)",
     "django-filter (>=25.1,<26.0)",
-    "diploma-frontend @ file:///home/uservm/PycharmProjects/megano_online_store_2025/diploma-frontend/dist/diploma-frontend-0.6.tar.gz",
+    "diploma-frontend @ ./diploma-frontend/arch/diploma-frontend-0.6.tar.gz",
     "pillow (>=11.2.1,<12.0.0)",
     "drf-spectacular (>=0.28.0,<0.29.0)",
     "django-cleanup (>=9.0.0,<10.0.0)",
 ]
 
+[tool.poetry.group.linters]
+optional = true
+
+[tool.poetry.group.linters.dependencies]
+black = "24.*"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+skip-string-normalization = true
+include = '''
+/megano/
+'''
+exclude = '''
+/(
+  \.git
+  | \.venv
+  | build
+  | dist
+  | static
+  | uploads
+  | migrations
+  | swagger
+)/
+'''
