@@ -1,0 +1,24 @@
+# Обязательный заголовок для файла pre-commit
+# Ссылки на документацию для удобства
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+-   repo: https://github.com/psf/black  # Официальный репозиторий Black
+    rev: 24.10.0  # Фиксированная версия (должна совпадать с pyproject.toml)
+    hooks:
+    -   id: black  # Идентификатор хука
+        name: black (code formatting)  # Человекочитаемое название
+        language: python  # Язык хука (для изоляции окружения)
+        language_version: python3.12  # Конкретная версия Python
+        args: [--line-length=100, --skip-string-normalization]  # Параметры Black
+        types: [python]  # Применять только к Python-файлам
+        stages: [pre-commit]  # Запускать только на стадии коммита
+        exclude: |  # Исключение файлов/папок
+            (?x)^( 
+              \.git|  
+              .*/\.cache/pypoetry/virtualenvs/|  
+              migrations|  
+              static|  
+              uploads  
+            )/

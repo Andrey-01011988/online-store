@@ -1,0 +1,81 @@
+name: Check Python formatting (Black)
+run-name: ${{ github.actor }} is starting Push request testing on branch ${{ github.ref_name }}
+
+on:
+  push:
+    branches: [ develop, master ] # Проверяем обе ветки
+    paths:
+      - '**.py'               # Workflow запустится только при изменении Python-файлов
+      - '.pre-commit-config.yaml'  # Или при изменении конфига pre-commit
+      - 'pyproject.toml'     # Или при изменении конфигурации Black
+  pull_request:
+    branches: [ master ] # Проверяем PR только в master
+    paths:
+      - '**.py'
+      - '.pre-commit-config.yaml'
+      - 'pyproject.toml'
+
+jobs:
+  black-check:
+    name: Run Black and pre-commit
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Получение кода из репозитория
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Полная история коммитов нужна для корректного git diff
+
+      # Шаг 2: Установка Python
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Версия должна совпадать с локальной
+
+      # Шаг 3: Установка Poetry (версия 2.1.0)
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: '2.1.0'
+          virtualenvs-create: true
+          virtualenvs-in-project: false
+
+      # Шаг 4: Кэширование зависимостей для ускорения workflow
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pre-commit
+          key: deps-${{ hashFiles('pyproject.toml', '.pre-commit-config.yaml') }}
+
+      # Шаг 5: Установка зависимостей
+      - name: Install dependencies
+        run: |
+          poetry install --only linters  # Устанавливаем только линтеры
+          poetry run pre-commit install-hooks  # Активируем pre-commit хуки
+
+      # Шаг 6: Определение измененных Python-файлов
+      - name: Get changed Python files
+        id: changed-files
+        run: |
+          # Получаем список измененных .py файлов относительно ветки develop
+          FILES=$(git diff --name-only origin/develop...HEAD | grep '\.py$' | tr '\n' ' ')
+          # Сохраняем результат для использования в следующих шагах
+          echo "files=${FILES}" >> $GITHUB_OUTPUT
+
+      # Шаг 7: Проверка ТОЛЬКО измененных файлов (если они есть)
+      - name: Run Black only on changed files
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          # Важно: пробел между --color и ${{...}}!
+          poetry run black --check --diff --color ${{ steps.changed-files.outputs.files }}
+
+      # Шаг 8: Полная проверка (если не удалось определить измененные файлы)
+      - name: Run full pre-commit (fallback)
+        if: steps.changed-files.outputs.files == ''
+        run: |
+          # Запускаем все pre-commit хуки
+          poetry run pre-commit run --all-files
+          # Дублирующая проверка Black для всего проекта
+          poetry run black --check --diff --color .
