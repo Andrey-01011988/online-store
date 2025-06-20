@@ -61,7 +61,7 @@ jobs:
         # Получаем список измененных .py файлов относительно ветки develop.
         # Сохраняем результат для использования в следующих шагах
         run: |
-          "FILES=$(git diff --name-only origin/develop...HEAD | grep '\.py$' | tr '\n' ' ')"
+          FILES=$(git diff --name-only origin/develop...HEAD 2>/dev/null | grep '\.py$' | tr '\n' ' ' || true)
           echo "files=${FILES}" >> $GITHUB_OUTPUT
 
       # Шаг 7: Проверка ТОЛЬКО измененных файлов (если они есть)
