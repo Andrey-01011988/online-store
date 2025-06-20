@@ -60,7 +60,7 @@ jobs:
         id: changed-files
         run: |
           # Получаем список измененных .py файлов относительно ветки develop
-          FILES=$(git diff --name-only origin/develop...HEAD | grep '\.py$' | tr '\n' ' ')
+          "FILES=$(git diff --name-only origin/develop...HEAD | grep '\.py$' | tr '\n' ' ')"
           # Сохраняем результат для использования в следующих шагах
           echo "files=${FILES}" >> $GITHUB_OUTPUT
 
