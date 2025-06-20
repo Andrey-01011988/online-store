@@ -68,7 +68,7 @@ jobs:
       - name: Run Black only on changed files
         if: steps.changed-files.outputs.files != ''
         run: |
-          # Важно: пробел между --color и ${{...}}!
+          # Важно: пробел между --color и ${{}}!
           poetry run black --check --diff --color ${{ steps.changed-files.outputs.files }}
 
       # Шаг 8: Полная проверка (если не удалось определить измененные файлы)
