@@ -24,7 +24,7 @@ def example(param1, param2):  # Лишние пробелы - Black исправ
 
 
 result = (
-    some_object2.method1()
+    some_object3.method1()
     .method2()
     .method3("очень длинный аргумент, который не влезает в 100 символов")
     .method("Aaaaaaaaaaaaaaaaaaaaa")
