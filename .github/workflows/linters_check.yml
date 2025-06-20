@@ -1,0 +1,79 @@
+name: Python Linters (pre-commit)
+run-name: ${{ github.actor }} running pre-commit checks on branch ${{ github.ref_name }}
+
+on:
+  push:
+    branches: [ develop, master ] # Проверяем обе ветки
+    paths:
+      - '**.py'               # Workflow запустится только при изменении Python-файлов
+      - '.pre-commit-config.yaml'  # Или при изменении конфига pre-commit
+      - 'pyproject.toml'     # Или при изменении конфигурации Black
+  pull_request:
+    branches: [ master ] # Проверяем PR только в master
+    paths:
+      - '**.py'
+      - '.pre-commit-config.yaml'
+      - 'pyproject.toml'
+
+jobs:
+  pre-commit-checks:
+    name: Run pre-commit
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Получение кода из репозитория
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Необходимо для корректной работы changed-files
+
+      # Шаг 2: Установка Python
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Версия должна совпадать с локальной
+
+      # Шаг 3: Установка Poetry (версия 2.1.0)
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: '2.1.0'
+
+      # Шаг 4: Кэширование зависимостей для ускорения workflow
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pre-commit
+          key: deps-${{ hashFiles('pyproject.toml', '.pre-commit-config.yaml') }}
+
+      # Шаг 5: Установка зависимостей
+      - name: Install dependencies
+        # Устанавливаем только линтеры.
+        # Активируем pre-commit хуки
+        run: |
+          poetry install --only linters
+          poetry run pre-commit install-hooks
+
+      # Шаг 6: Определение измененных файлов
+      - uses: tj-actions/changed-files@v44
+        id: changed-files
+        with:
+          since_last_remote_commit: 'true'
+          separator: ' '
+          files: '**.py'
+          files_ignore: |
+            **/migrations/**
+
+      # Шаг 7: Запуск pre-commit ТОЛЬКО для измененных файлов
+      - name: Run pre-commit
+        if: steps.changed-files.outputs.all_changed_files != ''
+        run: |
+          echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          poetry run pre-commit run --files ${{ steps.changed-files.outputs.all_changed_files }}
+
+      # Шаг 8: Fallback проверка (если не удалось определить изменения)
+      - name: Run full pre-commit check
+        if: steps.changed-files.outputs.all_changed_files == ''
+        run: |
+          poetry run pre-commit run --all-files
