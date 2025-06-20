@@ -58,24 +58,24 @@ jobs:
       # Шаг 6: Определение измененных Python-файлов
       - name: Get changed Python files
         id: changed-files
+        # Получаем список измененных .py файлов относительно ветки develop.
+        # Сохраняем результат для использования в следующих шагах
         run: |
-          # Получаем список измененных .py файлов относительно ветки develop
           "FILES=$(git diff --name-only origin/develop...HEAD | grep '\.py$' | tr '\n' ' ')"
-          # Сохраняем результат для использования в следующих шагах
           echo "files=${FILES}" >> $GITHUB_OUTPUT
 
       # Шаг 7: Проверка ТОЛЬКО измененных файлов (если они есть)
       - name: Run Black only on changed files
         if: steps.changed-files.outputs.files != ''
+        # Важно: пробел между --color и ${{}}!
         run: |
-          # Важно: пробел между --color и ${{}}!
           poetry run black --check --diff --color ${{ steps.changed-files.outputs.files }}
 
       # Шаг 8: Полная проверка (если не удалось определить измененные файлы)
       - name: Run full pre-commit (fallback)
         if: steps.changed-files.outputs.files == ''
+        # Запускаем все pre-commit хуки
+        # Дублирующая проверка Black для всего проекта
         run: |
-          # Запускаем все pre-commit хуки
           poetry run pre-commit run --all-files
-          # Дублирующая проверка Black для всего проекта
           poetry run black --check --diff --color .
