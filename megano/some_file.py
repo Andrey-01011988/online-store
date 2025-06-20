@@ -24,8 +24,9 @@ def example(param1, param2):  # Лишние пробелы - Black исправ
 
 
 result = (
-    some_object1.method1()
+    some_object2.method1()
     .method2()
     .method3("очень длинный аргумент, который не влезает в 100 символов")
+    .method("Aaaaaaaaaaaaaaaaaaaaa")
 )
 message = f"Очень длинное сообщение: {user.name}, ваш заказ {order.id} готов. Пожалуйста, заберите его до {delivery_date}!"
