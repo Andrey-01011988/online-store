@@ -95,3 +95,25 @@ class CategorySerializer(serializers.ModelSerializer):
             "image",
             "subcategories",
         )
+
+
+class ProductContractSerializer(serializers.ModelSerializer):
+    images = ImageSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    category = serializers.IntegerField(source="category.id", read_only=True)
+    reviews = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        exclude = ("reviews_count", "fullDescription")
+
+    def get_reviews(self, obj):
+        return obj.reviews_count  # поле есть в объекте, но не сериализуется напрямую
+
+    def get_date(self, obj):
+        if obj.date:
+            return obj.date.strftime(
+                "%a %b %d %Y %H:%M:%S GMT+0100 (Central European Standard Time)"
+            )
+        return ""
