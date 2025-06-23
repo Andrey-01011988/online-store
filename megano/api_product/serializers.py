@@ -117,3 +117,44 @@ class ProductContractSerializer(serializers.ModelSerializer):
                 "%a %b %d %Y %H:%M:%S GMT+0100 (Central European Standard Time)"
             )
         return ""
+
+
+class ProductShortSerializer(serializers.ModelSerializer):
+    images = ImageSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    category = serializers.IntegerField(source="category_id", read_only=True)
+    reviews = serializers.IntegerField(source='reviews_count', read_only=True)
+    date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = (
+            "id",
+            "category",
+            "price",
+            "count",
+            "date",
+            "title",
+            "description",
+            "freeDelivery",
+            "images",
+            "tags",
+            "reviews",
+            "rating",
+        )
+
+    def get_date(self, obj):
+        if obj.date:
+            return obj.date.strftime(
+                "%a %b %d %Y %H:%M:%S GMT+0100 (Central European Standard Time)"
+            )
+        return ""
+
+
+# class CatalogItemSerializer(serializers.ModelSerializer):
+
+#     date = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+#     freeDelivery = serializers.BooleanField()
+#     images = ImageSerializer(many=True, read_only=True)
+#     tags = TagSerializer(many=True, read_only=True)
+#     reviews = serializers.CharField(source='reviews_count')

@@ -7,6 +7,7 @@ from .views import (
     CategoriesAPIListView,
     ProductPopularAPIView,
     ProductLimitedAPIView,
+    CatalogView,
 )
 
 
@@ -19,4 +20,5 @@ urlpatterns = [
     path("products/limited", ProductLimitedAPIView.as_view(), name="product_limited"),
     path("tags", TagsAPIListView.as_view(), name="tags"),
     path("categories", CategoriesAPIListView.as_view(), name="categories"),
+    path("catalog", CatalogView.as_view(), name="catalog"),
 ]

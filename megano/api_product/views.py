@@ -18,6 +18,7 @@ from .serializers import (
     TagSerializer,
     CategorySerializer,
     ProductContractSerializer,
+    ProductShortSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -127,3 +128,71 @@ class ProductLimitedAPIView(ListAPIView):
             ", ".join(titles),
         )
         return response
+
+
+class CatalogView(APIView):
+    def get(self, request):
+        queryset = Product.objects.prefetch_related("tags", "images").all()
+
+        # --- Разбор фильтров ---
+        filter_params = request.query_params
+        print("\n", "Params", filter_params, "\n")
+        # deepObject фильтры
+        name = filter_params.get("filter[name]")
+        min_price = filter_params.get("filter[minPrice]")
+        max_price = filter_params.get("filter[maxPrice]")
+        free_delivery = filter_params.get("filter[freeDelivery]")
+        available = filter_params.get("filter[available]")
+        # Прочие параметры
+        category_id = filter_params.get("category")
+        tags = filter_params.getlist("tags")
+        sort = filter_params.get("sort", "date")
+        sort_type = filter_params.get('sortType', 'dec')
+        current_page = int(filter_params.get('currentPage', 1))
+        limit = int(filter_params.get('limit', 20))
+
+        # --- Фильтрация ---
+        if name:
+            queryset = queryset.filter(title__icontains=name)
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+        if free_delivery is not None:
+            queryset = queryset.filter(freeDelivery=free_delivery.lower() in ['true', '1', 'yes'])
+        if available is not None:
+            queryset = queryset.filter(
+                count__gt=0 if available.lower() in ['true', '1', 'yes'] else 0
+            )
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+        if tags:
+            queryset = queryset.filter(tags__id__in=tags).distinct()
+
+        # --- Сортировка ---
+        sort_map = {
+            'rating': 'rating',
+            'price': 'price',
+            'reviews': 'reviews_count',
+            'date': 'date',
+        }
+        sort_field = sort_map.get(sort, 'date')
+        if sort_type == 'dec':
+            sort_field = '-' + sort_field
+        queryset = queryset.order_by(sort_field)
+
+        # --- Пагинация ---
+        total = queryset.count()
+        last_page = (total + limit - 1) // limit
+        start = (current_page - 1) * limit
+        end = start + limit
+        queryset = queryset[start:end]
+
+        serializer = ProductShortSerializer(queryset, many=True)
+
+        print("\n", "Serializer data", serializer.data, "\n")
+
+        return Response(
+            {'items': serializer.data, 'currentPage': current_page, 'lastPage': last_page},
+            status=status.HTTP_200_OK,
+        )
