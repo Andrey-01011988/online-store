@@ -1,24 +1,26 @@
 import logging
+import re
 
 from django.db import IntegrityError
-from django.db.models import Prefetch
+from django.db.models import Prefetch, QuerySet, Count
 
 from rest_framework import status, permissions
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from drf_spectacular.utils import extend_schema
 
 from .models import Product, Review, Tag, Category
 from .serializers import (
     ProductDetailSerializer,
+    ProductShortSerializer,
     ReviewSerializer,
     TagSerializer,
     CategorySerializer,
     ProductContractSerializer,
-    ProductShortSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -130,69 +132,92 @@ class ProductLimitedAPIView(ListAPIView):
         return response
 
 
-class CatalogView(APIView):
-    def get(self, request):
-        queryset = Product.objects.prefetch_related("tags", "images").all()
+class CustomPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "limit"
+    max_page_size = 100
+    page_query_param = "currentPage"
 
-        # --- Разбор фильтров ---
-        filter_params = request.query_params
-        print("\n", "Params", filter_params, "\n")
-        # deepObject фильтры
-        name = filter_params.get("filter[name]")
-        min_price = filter_params.get("filter[minPrice]")
-        max_price = filter_params.get("filter[maxPrice]")
-        free_delivery = filter_params.get("filter[freeDelivery]")
-        available = filter_params.get("filter[available]")
-        # Прочие параметры
-        category_id = filter_params.get("category")
-        tags = filter_params.getlist("tags")
-        sort = filter_params.get("sort", "date")
-        sort_type = filter_params.get('sortType', 'dec')
-        current_page = int(filter_params.get('currentPage', 1))
-        limit = int(filter_params.get('limit', 20))
-
-        # --- Фильтрация ---
-        if name:
-            queryset = queryset.filter(title__icontains=name)
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-        if free_delivery is not None:
-            queryset = queryset.filter(freeDelivery=free_delivery.lower() in ['true', '1', 'yes'])
-        if available is not None:
-            queryset = queryset.filter(
-                count__gt=0 if available.lower() in ['true', '1', 'yes'] else 0
-            )
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
-        if tags:
-            queryset = queryset.filter(tags__id__in=tags).distinct()
-
-        # --- Сортировка ---
-        sort_map = {
-            'rating': 'rating',
-            'price': 'price',
-            'reviews': 'reviews_count',
-            'date': 'date',
-        }
-        sort_field = sort_map.get(sort, 'date')
-        if sort_type == 'dec':
-            sort_field = '-' + sort_field
-        queryset = queryset.order_by(sort_field)
-
-        # --- Пагинация ---
-        total = queryset.count()
-        last_page = (total + limit - 1) // limit
-        start = (current_page - 1) * limit
-        end = start + limit
-        queryset = queryset[start:end]
-
-        serializer = ProductShortSerializer(queryset, many=True)
-
-        print("\n", "Serializer data", serializer.data, "\n")
-
+    def get_paginated_response(self, data):
         return Response(
-            {'items': serializer.data, 'currentPage': current_page, 'lastPage': last_page},
-            status=status.HTTP_200_OK,
+            {
+                'items': data,
+                'currentPage': self.page.number,
+                'lastPage': self.page.paginator.num_pages,
+            }
         )
+
+
+class CatalogView(ListAPIView):
+    serializer_class = ProductShortSerializer
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = queryset = Product.objects.prefetch_related(
+            Prefetch("tags"), Prefetch("images")
+        ).select_related("category")
+        filter_params = {}
+
+        # Обработка фильтров
+        name = self.request.query_params.get("filter[name]")
+        if name:
+            filter_params["title__icontains"] = name
+
+        min_price = self.request.query_params.get("filter[minPrice]")
+        if min_price:
+            filter_params["price__gte"] = min_price
+
+        max_price = self.request.query_params.get("filter[maxPrice]")
+        if max_price:
+            filter_params["price__lte"] = max_price
+
+        # Обработка freeDelivery
+        free_delivery = self.request.query_params.get("filter[freeDelivery]", "").lower()
+        if free_delivery in ("true", "1", "yes"):
+            filter_params["freeDelivery"] = True
+        elif free_delivery in ("false", "0", "no"):
+            filter_params["freeDelivery"] = False
+
+        # Обработка available
+        available = self.request.query_params.get("filter[available]", "").lower()
+        if available in ("true", "1", "yes"):
+            filter_params["count__gt"] = 0
+
+        # Обработка категории
+        category = self.request.query_params.get("category")
+        if category:
+            filter_params["category"] = category
+
+        # Обработка тегов
+        tags = self.request.query_params.getlist("tags[]") or self.request.query_params.getlist(
+            "tags"
+        )
+        if tags:
+            filter_params["tags__id__in"] = tags
+
+        # Применение фильтров
+        if filter_params:
+            queryset = queryset.filter(**filter_params).distinct()
+
+        # Обработка сортировки
+        sort = self.request.query_params.get("sort", "date")
+        sort_type = self.request.query_params.get("sortType", "dec")
+
+        # Определение направления сортировки
+        sort_prefix = "" if sort_type == "inc" else "-"
+
+        # Специальная обработка для reviews (количество отзывов)
+        if sort == "reviews":
+            sort_field = f"{sort_prefix}reviews_count"
+        else:
+            # Стандартные поля сортировки
+            sort_field = f"{sort_prefix}{sort}"
+
+        # Применение сортировки
+        return queryset.order_by(sort_field)
+
+    def list(self, request, *args, **kwargs):
+        logger.debug(f"Catalog request: {request.query_params}")
+        response = super().list(request, *args, **kwargs)
+        logger.info(f"Catalog response: {len(response.data['items'])} items")
+        return response

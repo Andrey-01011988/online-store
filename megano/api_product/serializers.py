@@ -60,8 +60,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
 
 class CategoryImageSerializer(serializers.ModelSerializer):
-    src = serializers.ImageField()
-    alt = serializers.CharField()
+    src = serializers.ImageField(required=False)
+    alt = serializers.CharField(default="category image")
 
     class Meta:
         model = CategoryImage
@@ -72,7 +72,7 @@ class CategoryImageSerializer(serializers.ModelSerializer):
 
 
 class SubcategorySerializer(serializers.ModelSerializer):
-    image = CategoryImageSerializer()
+    image = CategoryImageSerializer(required=False)
 
     class Meta:
         model = Category
@@ -125,6 +125,8 @@ class ProductShortSerializer(serializers.ModelSerializer):
     category = serializers.IntegerField(source="category_id", read_only=True)
     reviews = serializers.IntegerField(source='reviews_count', read_only=True)
     date = serializers.SerializerMethodField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    rating = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
 
     class Meta:
         model = Product
@@ -149,12 +151,3 @@ class ProductShortSerializer(serializers.ModelSerializer):
                 "%a %b %d %Y %H:%M:%S GMT+0100 (Central European Standard Time)"
             )
         return ""
-
-
-# class CatalogItemSerializer(serializers.ModelSerializer):
-
-#     date = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
-#     freeDelivery = serializers.BooleanField()
-#     images = ImageSerializer(many=True, read_only=True)
-#     tags = TagSerializer(many=True, read_only=True)
-#     reviews = serializers.CharField(source='reviews_count')
