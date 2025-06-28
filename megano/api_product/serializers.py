@@ -11,12 +11,17 @@ from .models import (
 
 
 class ImageSerializer(serializers.ModelSerializer):
+    src = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
-        fields = (
-            "src",
-            "alt",
-        )
+        fields = ("src", "alt")
+
+    def get_src(self, obj):
+        request = self.context.get('request')
+        if obj.src and hasattr(obj.src, 'url'):
+            return request.build_absolute_uri(obj.src.url)
+        return None
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -57,22 +62,28 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         exclude = ("reviews_count",)
+        extra_kwargs = {
+            'images': {'context': {'request': None}}  # Контекст будет установлен в view
+        }
 
 
 class CategoryImageSerializer(serializers.ModelSerializer):
-    src = serializers.ImageField()
-    alt = serializers.CharField()
+    src = serializers.SerializerMethodField()
+    alt = serializers.CharField(default="category image")
 
     class Meta:
         model = CategoryImage
-        fields = (
-            "src",
-            "alt",
-        )
+        fields = ("src", "alt")
+
+    def get_src(self, obj):
+        request = self.context.get('request')
+        if obj.src and hasattr(obj.src, 'url'):
+            return request.build_absolute_uri(obj.src.url)
+        return None
 
 
 class SubcategorySerializer(serializers.ModelSerializer):
-    image = CategoryImageSerializer()
+    image = CategoryImageSerializer(required=False)
 
     class Meta:
         model = Category
@@ -117,3 +128,34 @@ class ProductContractSerializer(serializers.ModelSerializer):
                 "%a %b %d %Y %H:%M:%S GMT+0100 (Central European Standard Time)"
             )
         return ""
+
+
+class ProductShortSerializer(serializers.ModelSerializer):
+    images = ImageSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    category = serializers.IntegerField(source="category_id")
+    reviews = serializers.IntegerField(source='reviews_count')
+    date = serializers.SerializerMethodField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    rating = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    name = serializers.CharField(source='title')  # Добавляем алиас для фронтенда
+
+    class Meta:
+        model = Product
+        fields = (
+            "id",
+            "category",
+            "price",
+            "count",
+            "date",
+            "name",  # Используем вместо title
+            "freeDelivery",
+            "images",
+            "tags",
+            "reviews",
+            "rating",
+            "available",  # Добавляем поле
+        )
+
+    def get_date(self, obj):
+        return obj.date.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if obj.date else None
