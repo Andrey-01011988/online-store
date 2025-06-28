@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+
 import os
 from pathlib import Path
 
@@ -37,18 +38,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'rest_framework',
     'django_filters',
     'drf_spectacular',
-
+    'django_extensions',
     'frontend',
-
     'swagger.apps.SwaggerConfig',
     'api_auth.apps.AuthConfig',
     'api_product.apps.ApiProductConfig',
-
-
+    # 'api_transaction.apps.ApiTransactionConfig',
     'django_cleanup.apps.CleanupConfig',
 ]
 
@@ -60,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'megano.middleware.StrictNoSlashMiddleware',
 ]
 
 ROOT_URLCONF = 'megano.urls'
@@ -142,6 +141,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'APPEND_SLASH': False,
 }
 
 LOGGING = {
