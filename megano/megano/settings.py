@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'swagger.apps.SwaggerConfig',
     'api_auth.apps.AuthConfig',
     'api_product.apps.ApiProductConfig',
-    # 'api_transaction.apps.ApiTransactionConfig',
+    'api_transaction.apps.ApiTransactionConfig',
     'django_cleanup.apps.CleanupConfig',
 ]
 
