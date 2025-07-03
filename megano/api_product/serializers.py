@@ -111,9 +111,10 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductContractSerializer(serializers.ModelSerializer):
     images = ImageSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-    category = serializers.IntegerField(source="category.id", read_only=True)
+    category = serializers.IntegerField(source="category_id", read_only=True)
     reviews = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
+    rating = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
 
     class Meta:
         model = Product
