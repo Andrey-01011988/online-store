@@ -1,7 +1,8 @@
+from calendar import c
 import logging
 
 from django.db import IntegrityError
-from django.db.models import Prefetch, Count
+from django.db.models import Prefetch, Count, F
 
 from rest_framework import status, permissions
 from rest_framework.generics import RetrieveAPIView, ListAPIView
@@ -14,6 +15,7 @@ from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema
 
 from .models import Product, Review, Tag, Category
+from .pagination import CustomPagination
 from .serializers import (
     ProductDetailSerializer,
     ProductShortSerializer,
@@ -28,7 +30,11 @@ logger = logging.getLogger(__name__)
 
 @extend_schema(tags=["product"], responses=ProductDetailSerializer)
 class ProductDetailAPIView(RetrieveAPIView):
-    queryset = Product.objects.prefetch_related("tags", "specifications", "reviews", "images").all()
+    queryset = (
+        Product.objects.select_related("category")
+        .prefetch_related("tags", "specifications", "reviews", "images")
+        .all()
+    )
     serializer_class = ProductDetailSerializer
     lookup_field = "id"
 
@@ -106,8 +112,15 @@ class CategoriesAPIListView(ListAPIView):
 
 @extend_schema(tags=["catalog"], responses=ProductContractSerializer)
 class ProductPopularAPIView(ListAPIView):
-    queryset = Product.objects.prefetch_related("tags", "images").all()
+    queryset = (
+        Product.objects.prefetch_related("tags", "images")
+        .filter(available=True)
+        .order_by('-rating', '-reviews_count')[:3]
+    )
     serializer_class = ProductContractSerializer
+
+    def get_serializer_context(self):
+        return {'request': self.request}
 
     def get(self, request, *args, **kwargs):
         logger.debug("ProductPopularAPIView GET: user=%s", request.user)
@@ -121,9 +134,17 @@ class ProductPopularAPIView(ListAPIView):
         return response
 
 
+@extend_schema(tags=["catalog"], responses=ProductContractSerializer)
 class ProductLimitedAPIView(ListAPIView):
-    queryset = Product.objects.prefetch_related("tags", "images").all()
+    queryset = (
+        Product.objects.prefetch_related("tags", "images")
+        .filter(count__lte=50, available=True)
+        .order_by('count', '-date')[:3]
+    )
     serializer_class = ProductContractSerializer
+
+    def get_serializer_context(self):
+        return {'request': self.request}
 
     def get(self, request, *args, **kwargs):
         logger.debug("ProductLimitedAPIView GET: user=%s", request.user)
@@ -137,42 +158,7 @@ class ProductLimitedAPIView(ListAPIView):
         return response
 
 
-class CustomPagination(PageNumberPagination):
-    page_size = 20
-    page_size_query_param = "limit"
-    max_page_size = 100
-    page_query_param = "currentPage"
-
-    def get_paginated_response(self, data):
-        response_data = {
-            'items': data,
-            'currentPage': self.page.number,
-            'lastPage': self.page.paginator.num_pages,
-        }
-
-        logger.info(
-            "Пагинация: показано %d из %d товаров (страница %d/%d)",
-            len(data),
-            self.page.paginator.count,
-            self.page.number,
-            self.page.paginator.num_pages,
-        )
-        return Response(response_data)
-
-    def paginate_queryset(self, queryset, request, view=None):
-        try:
-            return super().paginate_queryset(queryset, request, view)
-        except NotFound:
-            logger.warning(
-                "Запрошена несуществующая страница: %s",
-                request.query_params.get(self.page_query_param),
-            )
-            raise
-        except Exception as e:
-            logger.error("Ошибка пагинации: %s", str(e))
-            raise
-
-
+@extend_schema(tags=["catalog"], responses=ProductShortSerializer)
 class CatalogView(ListAPIView):
     serializer_class = ProductShortSerializer
     pagination_class = CustomPagination
@@ -181,7 +167,10 @@ class CatalogView(ListAPIView):
         return {'request': self.request}
 
     def get_queryset(self):
-        logger.debug('Получен запрос на каталог с параметрами: %s', self.request.query_params)
+        logger.debug(
+            'Получен запрос на каталог. Метод: %s',
+            self.request.method,
+        )
         queryset = Product.objects.prefetch_related('tags', 'images', 'reviews').select_related(
             'category'
         )
@@ -191,7 +180,6 @@ class CatalogView(ListAPIView):
         # Сортировка
         queryset = self.apply_sorting(queryset)
 
-        logger.debug('Формируется queryset с %s товарами', queryset.count())
         return queryset
 
     def apply_filters(self, queryset):
@@ -225,7 +213,6 @@ class CatalogView(ListAPIView):
             logger.debug('Фильтрация по тегам: %s', tags)
             queryset = queryset.filter(tags__id__in=tags).distinct()
 
-        logger.debug('Queryset после фильтрации содержит %s товаров', queryset.count())
         return queryset
 
     def apply_sorting(self, queryset):
@@ -234,20 +221,17 @@ class CatalogView(ListAPIView):
 
         logger.debug('Сортировка по полю: %s, тип: %s', sort_field, sort_type)
 
-        if sort_field == 'reviews':
-            logger.debug(
-                'Выполняется аннотирование queryset по количеству отзывов для сортировки: %s',
-                sort_field,
-            )
-            queryset = queryset.annotate(total_reviews=Count('reviews'))
-            sort_field = 'total_reviews'
-
         prefix = '' if sort_type == 'inc' else '-'
 
-        valid_fields = {'price', 'rating', 'date', 'total_reviews'}
+        if sort_field == 'reviews':
+            logger.debug('Используем предварительно подсчитанное количество отзывов')
+            sort_field = 'reviews_count'
+
+        valid_fields = {'price', 'rating', 'date', 'reviews_count'}
         if sort_field not in valid_fields:
             logger.debug('Некорректное поле сортировки: %s. Используется "date".', sort_field)
             sort_field = 'date'
 
         logger.debug('Queryset отсортирован по: %s%s', prefix, sort_field)
+        logger.debug('Получен список продуктов: %s', list(queryset.values_list('title', flat=True)))
         return queryset.order_by(f'{prefix}{sort_field}')

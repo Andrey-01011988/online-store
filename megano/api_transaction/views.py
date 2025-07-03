@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,6 +12,7 @@ from drf_spectacular.utils import extend_schema
 from django.db import transaction
 
 from api_transaction.models import Basket
+from api_product.serializers import ProductContractSerializer
 from api_product.models import Product
 from .serializers import BasketItemSerializer
 
@@ -28,7 +30,6 @@ class BasketAPIView(APIView):
     def get(self, request):
         basket_items = (
             Basket.objects.filter(user=request.user)
-            .select_related('product__category')
             .prefetch_related('product__images', 'product__tags')
             .only(
                 'count',
@@ -47,7 +48,7 @@ class BasketAPIView(APIView):
         for item in basket_items:
             serializer = BasketItemSerializer(item.product, context={'request': request})
             item_data = serializer.data
-            item_data.update({'count': item.count, 'price': float(str(item.product.price))})
+            item_data.update({'count': item.count, 'price': item.product.price})
             serialized_items.append(item_data)
 
         return Response(serialized_items)
@@ -72,7 +73,7 @@ class BasketAPIView(APIView):
             if not product_id:
                 raise ValidationError({'id': 'Обязательное поле'})
 
-            count = int(request.data.get('count', 1))
+            count = int(request.data.get('count'))
             if count <= 0:
                 raise ValidationError({'count': 'Количество должно быть от 1 и больше'})
 
@@ -136,7 +137,7 @@ class BasketAPIView(APIView):
             if not product_id:
                 raise ValidationError({'id': 'Обязательное поле'})
 
-            count = int(data.get('count', 1))
+            count = int(data.get('count'))
             if count <= 0:
                 raise ValidationError({'count': 'Количество должно быть от 1 и больше'})
 
@@ -160,3 +161,29 @@ class BasketAPIView(APIView):
             return Response(
                 {'error': 'Товар не найден в корзине'}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+@extend_schema(tags=["catalog"], responses=BasketItemSerializer(many=True))
+class BannersAPIView(ListAPIView):
+    queryset = (
+        Product.objects.prefetch_related("tags", "images")
+        .only(
+            "id",
+            "category_id",
+            "price",
+            "count",
+            "title",
+            "description",
+            "freeDelivery",
+            "reviews_count",
+            "rating",
+        )
+        .order_by("-rating", "-reviews_count")
+    )[:3]
+    serializer_class = ProductContractSerializer
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+    # pagination_class = PageNumberPagination
+    # page_size = 20
