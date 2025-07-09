@@ -1,3 +1,7 @@
+from decimal import Decimal
+
+from django.utils import timezone
+
 from rest_framework import serializers
 from .models import (
     CategoryImage,
@@ -17,7 +21,7 @@ class ImageSerializer(serializers.ModelSerializer):
         model = ProductImage
         fields = ("src", "alt")
 
-    def get_src(self, obj):
+    def get_src(self, obj) -> str:
         request = self.context.get('request')
         if obj.src and hasattr(obj.src, 'url'):
             return request.build_absolute_uri(obj.src.url)
@@ -58,6 +62,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     reviews = ReviewSerializer(many=True, required=False)
     specifications = SpecificationSerializer(many=True, required=False)
     category = serializers.IntegerField(source="category.id", read_only=True)
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, coerce_to_string=False, source='current_price'
+    )
 
     class Meta:
         model = Product
@@ -75,7 +82,7 @@ class CategoryImageSerializer(serializers.ModelSerializer):
         model = CategoryImage
         fields = ("src", "alt")
 
-    def get_src(self, obj):
+    def get_src(self, obj) -> str:
         request = self.context.get('request')
         if obj.src and hasattr(obj.src, 'url'):
             return request.build_absolute_uri(obj.src.url)
@@ -115,15 +122,18 @@ class ProductContractSerializer(serializers.ModelSerializer):
     reviews = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
     rating = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, coerce_to_string=False, source='current_price'
+    )
 
     class Meta:
         model = Product
         exclude = ("reviews_count", "fullDescription")
 
-    def get_reviews(self, obj):
+    def get_reviews(self, obj) -> int:
         return obj.reviews_count  # поле есть в объекте, но не сериализуется напрямую
 
-    def get_date(self, obj):
+    def get_date(self, obj) -> str:
         if obj.date:
             return obj.date.strftime(
                 "%a %b %d %Y %H:%M:%S GMT+0100 (Central European Standard Time)"
@@ -137,7 +147,11 @@ class ProductShortSerializer(serializers.ModelSerializer):
     category = serializers.IntegerField(source="category_id")
     reviews = serializers.IntegerField(source='reviews_count')
     date = serializers.SerializerMethodField()
-    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    # price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+    # price = serializers.SerializerMethodField()
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, coerce_to_string=False, source='current_price'
+    )
     rating = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
     name = serializers.CharField(source='title')  # Добавляем алиас для фронтенда
 
@@ -158,5 +172,5 @@ class ProductShortSerializer(serializers.ModelSerializer):
             "available",  # Добавляем поле
         )
 
-    def get_date(self, obj):
+    def get_date(self, obj) -> str:
         return obj.date.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if obj.date else None

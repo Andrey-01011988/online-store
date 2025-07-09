@@ -107,7 +107,7 @@ class AvatarUploadSerializer(serializers.ModelSerializer):
             raise ValidationError("Загруженный файл не является валидным изображением")
         return value
 
-    def get_src(self, obj):
+    def get_src(self, obj) -> str:
         request = self.context.get("request")
         if obj.src and hasattr(obj.src, "url"):
             return request.build_absolute_uri(obj.src.url)

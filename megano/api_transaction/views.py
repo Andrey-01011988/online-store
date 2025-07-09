@@ -10,11 +10,14 @@ from rest_framework.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema
 
 from django.db import transaction
+from django.db.models import Prefetch
+from django.utils import timezone
 
 from api_transaction.models import Basket
 from api_product.serializers import ProductContractSerializer
-from api_product.models import Product
-from .serializers import BasketItemSerializer
+from api_product.models import Product, ProductImage, Tag
+from api_product.pagination import CustomPagination
+from .serializers import BasketItemSerializer, SaleSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +44,9 @@ class BasketAPIView(APIView):
                 'product__rating',
                 'product__reviews_count',
                 'product__category_id',
+                'product__salePrice',
+                'product__dateFrom',
+                'product__dateTo',
             )
         )
 
@@ -48,7 +54,7 @@ class BasketAPIView(APIView):
         for item in basket_items:
             serializer = BasketItemSerializer(item.product, context={'request': request})
             item_data = serializer.data
-            item_data.update({'count': item.count, 'price': item.product.price})
+            item_data.update({'count': item.count})
             serialized_items.append(item_data)
 
         return Response(serialized_items)
@@ -166,7 +172,10 @@ class BasketAPIView(APIView):
 @extend_schema(tags=["catalog"], responses=BasketItemSerializer(many=True))
 class BannersAPIView(ListAPIView):
     queryset = (
-        Product.objects.prefetch_related("tags", "images")
+        Product.objects.prefetch_related(
+            Prefetch('tags', queryset=Tag.objects.only('id', 'name')),
+            Prefetch('images', queryset=ProductImage.objects.only('src', 'alt', 'product_id')),
+        )
         .only(
             "id",
             "category_id",
@@ -177,13 +186,40 @@ class BannersAPIView(ListAPIView):
             "freeDelivery",
             "reviews_count",
             "rating",
+            "available",
+            "date",
+            "salePrice",
+            "dateFrom",
+            "dateTo",
         )
-        .order_by("-rating", "-reviews_count")
-    )[:3]
+        .order_by("-rating", "-reviews_count")[:3]
+    )
     serializer_class = ProductContractSerializer
 
     def get_serializer_context(self):
         return {'request': self.request}
 
-    # pagination_class = PageNumberPagination
-    # page_size = 20
+
+@extend_schema(tags=["catalog"], responses=SaleSerializer(many=True))
+class SalesAPIView(ListAPIView):
+    queryset = (
+        Product.objects.prefetch_related("images")
+        .filter(
+            salePrice__gt=0,
+            salePrice__isnull=False,
+            dateFrom__lte=timezone.now(),
+            dateTo__gte=timezone.now(),
+        )
+        .order_by("-salePrice")
+    )
+    serializer_class = SaleSerializer
+    pagination_class = CustomPagination
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+    def list(self, request, *args, **kwargs):
+        logger.debug("SalesAPIView request: %s", request.query_params)
+        response = super().list(request, *args, **kwargs)
+        logger.info("SalesAPIView response: %s items", len(response.data.get('items', [])))
+        return response
