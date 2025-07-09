@@ -1,20 +1,17 @@
-from calendar import c
 import logging
 
 from django.db import IntegrityError
-from django.db.models import Prefetch, Count, F
+from django.db.models import Prefetch, F
 
 from rest_framework import status, permissions
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import NotFound
 
 from drf_spectacular.utils import extend_schema
 
-from .models import Product, Review, Tag, Category
+from .models import Product, Review, Tag, Category, ProductImage
 from .pagination import CustomPagination
 from .serializers import (
     ProductDetailSerializer,
@@ -53,6 +50,7 @@ class ProductDetailAPIView(RetrieveAPIView):
 @extend_schema(tags=["product"], responses=ReviewSerializer)
 class ReviewAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ReviewSerializer
 
     def post(self, request: Request, id: int):
         logger.debug(
@@ -115,7 +113,8 @@ class ProductPopularAPIView(ListAPIView):
     queryset = (
         Product.objects.prefetch_related("tags", "images")
         .filter(available=True)
-        .order_by('-rating', '-reviews_count')[:3]
+        .annotate(popularity_score=F("rating") * F("reviews_count"))
+        .order_by('-popularity_score', '-date')[:3]
     )
     serializer_class = ProductContractSerializer
 
@@ -171,9 +170,13 @@ class CatalogView(ListAPIView):
             'Получен запрос на каталог. Метод: %s',
             self.request.method,
         )
-        queryset = Product.objects.prefetch_related('tags', 'images', 'reviews').select_related(
-            'category'
-        )
+        # queryset = Product.objects.prefetch_related('tags', 'images', 'reviews').select_related(
+        #     'category'
+        # )
+        queryset = Product.objects.prefetch_related(
+            Prefetch('tags', queryset=Tag.objects.only('id', 'name')),
+            Prefetch('images', queryset=ProductImage.objects.only('src', 'alt', 'product_id')),
+        ).select_related('category')
 
         # Фильтрация
         queryset = self.apply_filters(queryset)

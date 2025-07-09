@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class CustomPagination(PageNumberPagination):
-    page_size = 20
+    page_size = 5
     page_size_query_param = "limit"
     max_page_size = 100
     page_query_param = "currentPage"

@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone
 
 
 class Product(models.Model):
@@ -33,7 +36,12 @@ class Product(models.Model):
     )
     reviews_count = models.PositiveIntegerField(default=0, verbose_name="Количество отзывов")
     rating = models.DecimalField(default=0, decimal_places=2, max_digits=10, verbose_name="Рейтинг")
-    available = models.BooleanField(default=True)
+    available = models.BooleanField(default=True, verbose_name="В наличии")
+    salePrice = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Цена со скидкой"
+    )
+    dateFrom = models.DateTimeField(blank=True, null=True, verbose_name="Дата начала акции")
+    dateTo = models.DateTimeField(blank=True, null=True, verbose_name="Дата окончания акции")
 
     class Meta:
         verbose_name = "Товар"
@@ -41,6 +49,21 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def current_price(self) -> Decimal:
+        """Безопасное получение цены с проверкой загруженных полей"""
+        if not all(hasattr(self, attr) for attr in ['salePrice', 'dateFrom', 'dateTo']):
+            raise AttributeError("Required fields not loaded. Use .only() or .defer() in queryset")
+        if (
+            self.salePrice
+            and self.salePrice > 0
+            and self.dateFrom
+            and self.dateTo
+            and self.dateFrom <= timezone.now() <= self.dateTo
+        ):
+            return self.salePrice
+        return self.price
 
 
 class Category(models.Model):
