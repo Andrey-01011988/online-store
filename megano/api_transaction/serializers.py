@@ -4,7 +4,7 @@ from api_product.serializers import ImageSerializer, TagSerializer
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source="pk")
+    # id = serializers.IntegerField(source="pk")
     images = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     category = serializers.IntegerField(
@@ -20,7 +20,8 @@ class BasketItemSerializer(serializers.ModelSerializer):
     title = serializers.CharField()
     description = serializers.CharField(allow_blank=True, required=False)
     freeDelivery = serializers.BooleanField()
-    count = serializers.IntegerField(default=1, read_only=True)
+    # count = serializers.IntegerField(default=1, read_only=True)
+    count = serializers.IntegerField(default=1)
     price = serializers.DecimalField(
         max_digits=10, decimal_places=2, coerce_to_string=False, source='current_price'
     )
