@@ -104,7 +104,13 @@ class CategoriesAPIListView(ListAPIView):
     def get(self, request, *args, **kwargs):
         logger.debug("CategoriesAPIListView GET: user=%s", request.user)
         response = super().get(request, *args, **kwargs)
-        logger.info("CategoriesAPIListView response: %s", response.data)
+        logger.info(
+            "CategoriesAPIListView response: %s",
+            [
+                (i.get("title"), [subcat.get("title") for subcat in i.get("subcategories", [])])
+                for i in response.data
+            ],
+        )
         return response
 
 

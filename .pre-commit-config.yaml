@@ -14,11 +14,12 @@ repos:
         args: [--line-length=100, --skip-string-normalization]  # Параметры Black
         types: [python]  # Применять только к Python-файлам
         stages: [pre-commit]  # Запускать только на стадии коммита
-        force-exclude: |  # Исключение файлов/папок
-            (?x)^( 
-              \.git|  
-              .*/\.cache/pypoetry/virtualenvs/|  
-              .*/migrations/|  
-              static|  
-              uploads  
-            )/
+        exclude: |  # Исключение файлов/папок
+            (?x)^(
+              \.git|
+              .*/venv/|       
+              .*/.virtualenvs/| 
+              .*migrations/.*|
+              static|
+              uploads
+            )/?

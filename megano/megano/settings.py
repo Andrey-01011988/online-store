@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'api_auth.apps.AuthConfig',
     'api_product.apps.ApiProductConfig',
     'api_transaction.apps.ApiTransactionConfig',
+    'api_order.apps.ApiOrderConfig',
     'django_cleanup.apps.CleanupConfig',
 ]
 
