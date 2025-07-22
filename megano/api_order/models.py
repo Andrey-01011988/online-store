@@ -12,6 +12,11 @@ class Order(models.Model):
         on_delete=models.PROTECT,
         related_name='orders',
         verbose_name="Пользователь",
+        null=True,
+        blank=True,
+    )
+    session_key = models.CharField(
+        max_length=100, verbose_name="Ключ сессии", null=True, blank=True
     )
     createdAt = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     deliveryType = models.CharField(max_length=255, verbose_name="Тип доставки", default="")

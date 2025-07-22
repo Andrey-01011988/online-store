@@ -61,11 +61,11 @@ class BasketAPIView(APIView):
             product_ids = list(basket.keys())
             products = Product.objects.filter(id__in=product_ids, available=True)
             serializer = BasketItemSerializer(products, many=True, context={'request': request})
-            data = []
+            serialized_items = []
             for product, serialized in zip(products, serializer.data):
                 item_data = serialized
                 item_data['count'] = basket[str(product.id)]['count']
-                data.append(item_data)
+                serialized_items.append(item_data)
 
         return Response(serialized_items)
 
