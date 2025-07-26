@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 
 class Order(models.Model):
@@ -8,9 +9,9 @@ class Order(models.Model):
     """
 
     user = models.ForeignKey(
-        "api_auth.Profile",
+        settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name='orders',
+        related_name="orders",
         verbose_name="Пользователь",
         null=True,
         blank=True,
@@ -41,15 +42,24 @@ class Order(models.Model):
 
     @property
     def email(self):
-        return self.user.user.email
+        """Возвращает email пользователя или None, если пользователь не указан."""
+        return getattr(self.user, "email", None) if self.user else None
 
     @property
     def fullName(self):
-        return self.user.fullName
+        """Возвращает полное имя из профиля или None."""
+        if not self.user:
+            return None
+        profile = getattr(self.user, "profile", None)
+        return getattr(profile, "fullName", None)
 
     @property
     def phone(self):
-        return self.user.phone
+        """Возвращает телефон из профиля или None."""
+        if not self.user:
+            return None
+        profile = getattr(self.user, "profile", None)
+        return getattr(profile, "phone", None)
 
     @property
     def orderId(self):
@@ -81,13 +91,6 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            # if not self.pk:
-            #     super().save(*args, **kwargs)
-            # self.totalCost = self.get_total_cost() + self.calculate_delivery_cost()
-            # if self.pk:  # Убедимся, что запись существует
-            #     kwargs.pop('force_insert', None)  # Удаляем force_insert, если он есть
-            #     super().save(update_fields=['totalCost'], *args, **kwargs)
-
             # Всегда рассчитываем стоимость
             self.totalCost = self.get_total_cost() + self.calculate_delivery_cost()
             # Сохраняем все поля

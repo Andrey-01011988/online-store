@@ -122,18 +122,18 @@ files = [
 
 [[package]]
 name = "diploma-frontend"
-version = "0.6"
+version = "0.7"
 description = "Frontend for diploma project"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "diploma-frontend-0.6.tar.gz", hash = "sha256:3a6b1203724b256946919b4d65b362b005ae6a9e1e93d8d765e96aa6a92764ac"},
+    {file = "diploma_frontend-0.7.tar.gz", hash = "sha256:0757113a10ebe9b9f512c44586222dbf833d68034f5fce20481f3d2e2ccc4da6"},
 ]
 
 [package.source]
 type = "file"
-url = "diploma-frontend/arch/diploma-frontend-0.6.tar.gz"
+url = "diploma-frontend/arch/diploma_frontend-0.7.tar.gz"
 
 [[package]]
 name = "distlib"
@@ -781,7 +781,6 @@ description = "Backported and Experimental Type Hints for Python 3.9+"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "python_version < \"3.13\""
 files = [
     {file = "typing_extensions-4.14.0-py3-none-any.whl", hash = "sha256:a1514509136dd0b477638fc68d6a91497af5076466ad0fa6c338e44e359944af"},
     {file = "typing_extensions-4.14.0.tar.gz", hash = "sha256:8676b788e32f02ab42d9e7c61324048ae4c6d844a399eebace3d4979d75ceef4"},
@@ -835,5 +834,5 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12"
-content-hash = "b96884df31eccde718022a79b5534a022496d1160d53aab65a6450c11f97c7c5"
+python-versions = ">=3.12,<3.13"
+content-hash = "51fc361b4f5d76204a6b3f38f41d92cd206e4bbf524ec10f1b6f3048c813af11"
