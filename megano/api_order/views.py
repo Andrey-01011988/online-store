@@ -19,22 +19,32 @@ logger = logging.getLogger(__name__)
 class OrdersAPIView(APIView):
 
     def get(self, request: Request, pk=None):
-        data = Order.objects.filter(user_id=request.user.profile.pk)
+        logger.debug("\nstart get orders\n")
+        if not request.user.is_authenticated:
+            logger.debug("\nuser is not authenticated\n")
+            data = Order.objects.filter(id=pk)
+        else:
+            logger.debug("\nuser is authenticated\n")
+            data = Order.objects.filter(user_id=request.user.pk)
         for i in data:
             print("\ndata", i.pk, i.city, i.products.all(), "\n")
             # logger.debug("GET order data: %s", i)
         serializer = OrderSerializer(data, many=True, context={'request': request})
-        print("\nserializer.data", serializer.data, "\n")
+        # print("\nserializer.data", serializer.data, "\n")
         # logger.debug("\nGET orders data: \n%s", "\n".join(map(str, serializer.data)))
+        logger.debug("\nend get orders\n")
         return Response(serializer.data)
 
     @transaction.atomic
     def post(self, request: Request, *args, **kwargs):
-        print("\nrequest data", request.data, "\n")
+        logger.debug("\nstart post orders\n")
+        # print("\nrequest data", request.data, "\n")
         # logger.debug("\nPOST order data: %s", request.data, "\n")
 
         products_in_order = [(obj["id"], obj["count"], obj["price"]) for obj in request.data]
+        logger.debug("products_in_order:\n%s", "\n".join(str(item) for item in products_in_order))
         if not products_in_order:
+            logger.debug("\norder is empty\n")
             return Response(
                 {"error": "Заказ не может быть пустым"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -43,6 +53,7 @@ class OrdersAPIView(APIView):
             missing_ids = set([obj[0] for obj in products_in_order]) - set(
                 products.values_list("id", flat=True)
             )
+            logger.debug("\nmissing_ids: %s\n", missing_ids)
             return Response(
                 {"error": f"Товары с ID {missing_ids} не найдены"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -51,14 +62,28 @@ class OrdersAPIView(APIView):
         # Создаем словарь для быстрого доступа к цене и количеству по ID товара
         product_info = {pid: (count, price) for pid, count, price in products_in_order}
 
-        order = Order.objects.create(
-            user=request.user.profile,
-            totalCost=sum([obj[1] * obj[2] for obj in products_in_order]),
-        )
+        if not request.user.is_authenticated:
+            logger.debug("\ncreate order without user\n")
+            # Если пользователь не авторизован, создаем новую сессию
+            request.session.save()
+            order = Order.objects.create(
+                totalCost=sum([obj[1] * obj[2] for obj in products_in_order]),
+                session_key=request.session.session_key,
+            )
+            logger.debug(
+                "\norder without user created with session_key: %s\n", request.session.session_key
+            )
+        else:
+            logger.debug("\ncreate order with user\n")
+            order = Order.objects.create(
+                user=request.user,
+                totalCost=sum([obj[1] * obj[2] for obj in products_in_order]),
+            )
+            logger.debug("\norder with user created\n")
         data = {
             "orderId": order.pk,
         }
-        print("\n", products, "\n")
+        # print("\n", products, "\n")
         # logger.debug("\nPOST order products: %s", products.all(), "\n")
         # Создаем OrderItem с указанием цены для каждого товара
         order_items = [
@@ -72,31 +97,48 @@ class OrdersAPIView(APIView):
         ]
         OrderItem.objects.bulk_create(order_items)
         order.products.set(products)  # Явно устанавливаем связь между заказом и товарами
+        logger.debug("\nend post orders\n")
         return Response(data, status=status.HTTP_201_CREATED)
 
 
 class OrderDetailAPIView(APIView):
 
-    def get(self, request: Request, pk):
+    def get(self, request: Request, pk=None):
+        logger.debug("\nstart get orders\n")
         if pk:
             # Детали одного заказа
+            logger.debug("\nstart get one order\n")
             try:
-                order = Order.objects.get(id=pk, user=request.user.profile)
-                print("\norder", order.pk, order.city, order.products.all(), "\n")
+                if not request.user.is_authenticated:
+                    logger.debug("\nuser is not authenticated\n")
+                    order = Order.objects.get(id=pk, session_key=request.session.session_key)
+                else:
+                    logger.debug("\nuser is authenticated\n")
+                    logger.debug("\nstart get one order without session_key id=%s0\n", pk)
+                    order = Order.objects.get(id=pk)
+                    logger.debug("\norder without session_key id=%s found\n", pk)
+                    if order.user is None:
+                        order.user = request.user
+                        order.save()
+                        logger.debug("\nadded user to order without session_key id=%s\n", pk)
+                print("\norder", order.pk, order.products.all(), "\n")
                 for i in order.products.all():
                     print("\norder", i.pk, i.title, i.count, i.price, i.images.all(), "\n")
                 serializer = OrderSerializer(order, context={'request': request})
+                logger.debug("\nend get one order\n")
                 return Response(serializer.data)
             except Order.DoesNotExist:
                 return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
             # Список заказов
-            orders = Order.objects.filter(user=request.user.profile)
+            orders = Order.objects.filter(user=request.user)
             serializer = OrderSerializer(orders, many=True)
+            logger.debug("\nend get list orders\n")
             return Response(serializer.data)
 
     @transaction.atomic
     def post(self, request: Request, pk=None):
+        logger.debug("\nstart post order\n")
         try:
             data = request.data
             print("\ndata", data, "\n")
@@ -109,10 +151,7 @@ class OrderDetailAPIView(APIView):
                 )
             # Создание заказа
             order_data = {
-                'user': request.user.profile,
-                # 'fullName': data.get('fullName'),
-                # 'phone': data.get('phone'),
-                # 'email': data.get('email'),
+                'user': request.user,
                 'deliveryType': data.get('deliveryType', 'ordinary'),
                 'city': data.get('city'),
                 'address': data.get('address'),
@@ -120,9 +159,8 @@ class OrderDetailAPIView(APIView):
                 'status': 'Ожидает оплаты',
             }
             print("\norder_data", order_data, "\n")
-            # Код не сохраняет заказ
             if pk:
-                order = Order.objects.get(pk=pk, user=request.user.profile)
+                order = Order.objects.get(pk=pk)
                 for key, value in order_data.items():
                     setattr(order, key, value)
                 order.save()
@@ -149,9 +187,32 @@ class OrderDetailAPIView(APIView):
             elif 'basket' in request.session:
                 del request.session['basket']
 
+            logger.debug("\nend post order\n")
+
             return Response({'orderId': order.id}, status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error(f"Order error: {str(e)}")
             return Response(
                 {'error': 'Order processing failed'}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class PaymentAPIView(APIView):
+    def post(self, request: Request, pk: int) -> Response:
+        logger.debug("\nstart post payment\n")
+        cart_number = request.data["number"]
+        try:
+            order = Order.objects.get(pk=pk)
+            if int(cart_number) % 2 == 0 and not cart_number.endswith("0"):
+                order.status = 'Оплачено'
+                order.save()
+                logger.debug("\nend post payment\n")
+            else:
+                order.status = 'Не оплачено'
+                order.save()
+                logger.debug("\nend post payment error\n")
+                return Response({'error': 'Номер карты не прошел валидацию'})
+                # raise Exception('Номер карты не прошел валидацию')
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
