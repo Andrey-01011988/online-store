@@ -30,7 +30,7 @@ class OrdersAPIView(APIView):
                 queryset=OrderItem.objects.select_related("product").prefetch_related(
                     Prefetch(
                         'product__images',
-                        queryset=ProductImage.objects.only('src', 'alt'),
+                        queryset=ProductImage.objects.all(),
                         to_attr='prefetched_images',
                     ),
                     Prefetch(

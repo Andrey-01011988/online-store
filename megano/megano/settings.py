@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django_extensions',
     'debug_toolbar',
+    'common_mode.apps.CommonModeConfig',
     'frontend',
     'swagger.apps.SwaggerConfig',
     'api_auth.apps.AuthConfig',
