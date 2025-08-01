@@ -10,7 +10,7 @@ class Order(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="orders",
         verbose_name="Пользователь",
         null=True,
@@ -112,9 +112,11 @@ class OrderItem(models.Model):
     )
     product = models.ForeignKey(
         "api_product.Product",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="order_items",
         verbose_name="Товар",
+        null=True,
+        blank=True,
     )
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
     count = models.PositiveIntegerField(default=1, verbose_name="Количество")
@@ -144,6 +146,15 @@ class DeliverySettings(models.Model):
     REGULAR_DELIVERY_COST = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name="Стоимость обычной доставки", default=200
     )
+
+    class Meta:
+        verbose_name = "Настройки доставки"
+        verbose_name_plural = "Настройки доставки"
+
+    def save(self, *args, **kwargs):
+        # При сохранении удаляем все другие записи
+        DeliverySettings.objects.exclude(id=self.id).delete()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return "Настройки доставки"

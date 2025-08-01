@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.db.models import Count, Prefetch
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils import timezone
 
 from .models import (
     Product,
@@ -14,9 +15,7 @@ from .models import (
 )
 
 
-class CategoryImageInline(
-    admin.TabularInline
-):  # или admin.StackedInline для другого вида
+class CategoryImageInline(admin.TabularInline):  # или admin.StackedInline для другого вида
     model = CategoryImage
     extra = 1  # Количество пустых форм для добавления
     fields = ("src", "alt", "image_preview")  # Поля, которые можно редактировать
@@ -33,8 +32,30 @@ class CategoryImageInline(
     image_preview.short_description = "Превью"
 
 
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    fields = ("src", "alt", "thumbnail_preview")
+    readonly_fields = ("thumbnail_preview",)
+
+    def thumbnail_preview(self, obj):
+        if hasattr(obj, "src") and obj.src:
+            return format_html(
+                '<img src="{}" style="max-height: 50px; max-width: 50px;" />',
+                obj.src.url,
+            )
+        return "Нет изображения"
+
+    thumbnail_preview.short_description = "Превью"
+
+
+class SpecificationInline(admin.TabularInline):
+    model = Specification
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    actions_on_top = True
+    actions_on_bottom = True
     list_display = (
         "id",
         "title",
@@ -46,6 +67,8 @@ class ProductAdmin(admin.ModelAdmin):
         "rating",
         "reviews_count",
         "tags_display",
+        "is_deleted",
+        "deleted_at",
     )
     list_display_links = ("id", "title")
     ordering = ("id",)
@@ -54,15 +77,35 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ("tags",)
     list_per_page = 50
     autocomplete_fields = ("tags",)
+    inlines = [ProductImageInline, SpecificationInline]
+    raw_id_fields = ("category",)
+    actions = ["soft_delete", "hard_delete", "restore"]
+
+    def soft_delete(self, request, queryset):
+        queryset.update(is_deleted=True, deleted_at=timezone.now())
+
+    soft_delete.short_description = "Пометить как удаленные"
+
+    def hard_delete(self, request, queryset):
+        queryset.delete()
+
+    hard_delete.short_description = "Удалить навсегда"
+
+    def restore(self, request, queryset):
+        queryset.update(is_deleted=False, deleted_at=None)
+
+    restore.short_description = "Восстановить"
 
     def get_queryset(self, request):
-        queryset = Product.objects.select_related("category").prefetch_related(
-            Prefetch("tags", queryset=Tag.objects.only("name")),
-            Prefetch("images", queryset=ProductImage.objects.only("src", "product")),
-            Prefetch("reviews", queryset=Review.objects.only("product", "rate")),
-            Prefetch(
-                "specifications", queryset=Specification.objects.only("product", "name")
-            ),
+        queryset = (
+            Product.objects.all_with_deleted()
+            .select_related("category")
+            .prefetch_related(
+                Prefetch("tags", queryset=Tag.objects.only("name")),
+                Prefetch("images", queryset=ProductImage.objects.only("src", "product")),
+                Prefetch("reviews", queryset=Review.objects.only("product", "rate")),
+                Prefetch("specifications", queryset=Specification.objects.only("product", "name")),
+            )
         )
         return queryset
 
@@ -82,17 +125,45 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "parent_link", "image_preview", "products_count")
+    actions_on_top = True
+    actions_on_bottom = True
+    list_display = (
+        "id",
+        "title",
+        "parent_link",
+        "image_preview",
+        "products_count",
+        "is_deleted",
+        "deleted_at",
+    )
     list_display_links = ("id", "title")
     ordering = ("id",)
     search_fields = ("title",)
     list_filter = ("parent",)
     list_select_related = ("parent",)
     inlines = [CategoryImageInline]
+    actions = ["soft_delete", "hard_delete", "restore"]
+
+    def soft_delete(self, request, queryset):
+        queryset.update(is_deleted=True, deleted_at=timezone.now())
+
+    soft_delete.short_description = "Пометить как удаленные"
+
+    def hard_delete(self, request, queryset):
+        queryset.delete()
+
+    hard_delete.short_description = "Удалить навсегда"
+
+    def restore(self, request, queryset):
+        queryset.update(is_deleted=False, deleted_at=None)
+
+    restore.short_description = "Восстановить"
 
     def get_queryset(self, request):
-        queryset = Category.objects.select_related("parent").annotate(
-            products_count=Count("products", distinct=True)
+        queryset = (
+            Category.objects.all_with_deleted()
+            .select_related("parent")
+            .annotate(products_count=Count("products", distinct=True))
         )
         return queryset
 

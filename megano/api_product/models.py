@@ -5,13 +5,15 @@ from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 
+from common_mode.models import SoftDeleteModel
 
-class Product(models.Model):
+
+class Product(SoftDeleteModel):
     """
     Модель товара
     """
 
-    objects = models.Manager()  # Определяет стандартный менеджер модели
+    # objects = models.Manager()  # Определяет стандартный менеджер модели
 
     category = models.ForeignKey(
         "Category",
@@ -66,12 +68,12 @@ class Product(models.Model):
         return self.price
 
 
-class Category(models.Model):
+class Category(SoftDeleteModel):
     """
     Модель категории товара
     """
 
-    objects = models.Manager()  # Определяет стандартный менеджер модели
+    # objects = models.Manager()  # Определяет стандартный менеджер модели
 
     title = models.CharField(max_length=128, verbose_name="Название")
     parent = models.ForeignKey(

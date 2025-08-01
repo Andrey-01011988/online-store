@@ -5,30 +5,51 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from drf_spectacular.utils import extend_schema
+
 from django.db import transaction
+from django.db.models import Prefetch
 
 from .models import Order, OrderItem
 from .serializers import OrderSerializer
-from api_product.models import Product
+from api_product.models import Product, ProductImage, Tag
 from api_transaction.models import Basket
 
 
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(tags=["order"])
 class OrdersAPIView(APIView):
 
     def get(self, request: Request, pk=None):
         logger.debug("\nstart get orders\n")
+        queryset = Order.objects.select_related("user", "user__profile").prefetch_related(
+            Prefetch(
+                "items",
+                queryset=OrderItem.objects.select_related("product").prefetch_related(
+                    Prefetch(
+                        'product__images',
+                        queryset=ProductImage.objects.all(),
+                        to_attr='prefetched_images',
+                    ),
+                    Prefetch(
+                        'product__tags',
+                        queryset=Tag.objects.only('id', 'name'),
+                        to_attr='prefetched_tags',
+                    ),
+                ),
+            )
+        )
         if not request.user.is_authenticated:
             logger.debug("\nuser is not authenticated\n")
-            data = Order.objects.filter(id=pk)
+            data = queryset.filter(id=pk)
+
         else:
             logger.debug("\nuser is authenticated\n")
-            data = Order.objects.filter(user_id=request.user.pk)
-        for i in data:
-            print("\ndata", i.pk, i.city, i.products.all(), "\n")
-            # logger.debug("GET order data: %s", i)
+            data = queryset.filter(user_id=request.user.pk)
+
+        # logger.debug("GET orders data: %s", data.values_list('pk', 'city', 'items__product__title'))
         serializer = OrderSerializer(data, many=True, context={'request': request})
         # print("\nserializer.data", serializer.data, "\n")
         # logger.debug("\nGET orders data: \n%s", "\n".join(map(str, serializer.data)))
@@ -101,6 +122,7 @@ class OrdersAPIView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["order"])
 class OrderDetailAPIView(APIView):
 
     def get(self, request: Request, pk=None):
