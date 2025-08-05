@@ -31,3 +31,9 @@ class SoftDeleteModel(models.Model):
     def hard_delete(self):
         """Метод для настоящего удаления записи"""
         super().delete()
+
+    def restore(self):
+        """Восстановление записи"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.save(update_fields=['is_deleted', 'deleted_at'])

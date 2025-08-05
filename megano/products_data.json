@@ -1,0 +1,596 @@
+[
+{
+  "model": "api_product.product",
+  "pk": 1,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "category": 2,
+    "price": "2399.99",
+    "count": 10,
+    "date": "2025-06-07T14:33:39.459Z",
+    "title": "Laptop",
+    "description": "High-performance laptop",
+    "fullDescription": "A laptop with high specs for professionals.",
+    "freeDelivery": true,
+    "reviews_count": 0,
+    "rating": "0.00",
+    "available": true,
+    "salePrice": "1999.99",
+    "dateFrom": "2025-07-01T00:00:00Z",
+    "dateTo": "2025-07-31T00:00:00Z",
+    "tags": [
+      1,
+      2
+    ]
+  }
+},
+{
+  "model": "api_product.product",
+  "pk": 2,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "category": 3,
+    "price": "987.50",
+    "count": 25,
+    "date": "2025-06-07T14:33:39.500Z",
+    "title": "Smartphone",
+    "description": "Latest model smartphone",
+    "fullDescription": "Flagship smartphone with AMOLED display.",
+    "freeDelivery": false,
+    "reviews_count": 0,
+    "rating": "0.00",
+    "available": true,
+    "salePrice": "799.99",
+    "dateFrom": "2025-07-01T00:00:00Z",
+    "dateTo": "2025-07-31T00:00:00Z",
+    "tags": [
+      3,
+      4
+    ]
+  }
+},
+{
+  "model": "api_product.product",
+  "pk": 3,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "category": 5,
+    "price": "120.00",
+    "count": 50,
+    "date": "2025-06-13T09:43:47.866Z",
+    "title": "Running Shoes",
+    "description": "Comfortable running shoes",
+    "fullDescription": "Shoes designed for running and sports.",
+    "freeDelivery": true,
+    "reviews_count": 0,
+    "rating": "0.00",
+    "available": true,
+    "salePrice": null,
+    "dateFrom": null,
+    "dateTo": null,
+    "tags": [
+      5,
+      6
+    ]
+  }
+},
+{
+  "model": "api_product.product",
+  "pk": 4,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "category": 6,
+    "price": "75.00",
+    "count": 30,
+    "date": "2025-06-13T09:43:47.906Z",
+    "title": "Fitness Tracker",
+    "description": "Track your fitness activities",
+    "fullDescription": "Waterproof fitness tracker with heart rate monitor.",
+    "freeDelivery": false,
+    "reviews_count": 0,
+    "rating": "0.00",
+    "available": true,
+    "salePrice": null,
+    "dateFrom": null,
+    "dateTo": null,
+    "tags": [
+      7,
+      8
+    ]
+  }
+},
+{
+  "model": "api_product.product",
+  "pk": 5,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "category": 7,
+    "price": "35.00",
+    "count": 100,
+    "date": "2025-06-13T09:43:47.937Z",
+    "title": "Yoga Mat",
+    "description": "Eco-friendly yoga mat",
+    "fullDescription": "Non-slip yoga mat for all types of exercises.",
+    "freeDelivery": true,
+    "reviews_count": 0,
+    "rating": "0.00",
+    "available": true,
+    "salePrice": null,
+    "dateFrom": null,
+    "dateTo": null,
+    "tags": [
+      9,
+      10
+    ]
+  }
+},
+{
+  "model": "api_product.product",
+  "pk": 6,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "category": 8,
+    "price": "999.00",
+    "count": 100,
+    "date": "2025-07-30T13:17:38.730Z",
+    "title": "TestProduct",
+    "description": "Тестовый продукт для проверки мягкого удаления",
+    "fullDescription": "Назначение: Тестовый продукт предназначен для проверки функции мягкого удаления, которая позволяет временно удалять записи без полного удаления их из базы данных.\r\n\r\nФункциональность:\r\n\r\nВозможность помечать записи как удаленные без фактического удаления их из базы данных\r\nВозможность восстанавливать удаленные записи в случае необходимости\r\nПоддержка различных типов данных, включая текст, изображения и файлы\r\nВозможность настройки периодов хранения удаленных записей\r\nПреимущества:\r\n\r\nПовышенная безопасность и защита данных\r\nВозможность быстрого восстановления удаленных записей\r\nУменьшение риска потери важных данных\r\nТребования:\r\n\r\nБаза данных с поддержкой мягкого удаления\r\nИнтерфейс для управления удаленными записями\r\nВозможность настройки параметров хранения удаленных записей",
+    "freeDelivery": true,
+    "reviews_count": 0,
+    "rating": "0.00",
+    "available": true,
+    "salePrice": null,
+    "dateFrom": null,
+    "dateTo": null,
+    "tags": [
+      3,
+      8
+    ]
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 1,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Electronics",
+    "parent": null
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 2,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Laptops",
+    "parent": 1
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 3,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Smartphones",
+    "parent": 1
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 4,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Sportswear",
+    "parent": null
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 5,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Footwear",
+    "parent": 4
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 6,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Accessories",
+    "parent": 4
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 7,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "Equipment",
+    "parent": 4
+  }
+},
+{
+  "model": "api_product.category",
+  "pk": 8,
+  "fields": {
+    "is_deleted": false,
+    "deleted_at": null,
+    "title": "TestCategory",
+    "parent": null
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 1,
+  "fields": {
+    "category": 1,
+    "src": "categories/Electronics_1/electronics.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 2,
+  "fields": {
+    "category": 2,
+    "src": "categories/Laptops_2/2081115.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 3,
+  "fields": {
+    "category": 3,
+    "src": "categories/Smartphones_3/2760414.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 4,
+  "fields": {
+    "category": 4,
+    "src": "categories/Sportswear_4/sportswear.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 5,
+  "fields": {
+    "category": 5,
+    "src": "categories/Footwear_5/footwear.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 6,
+  "fields": {
+    "category": 6,
+    "src": "categories/Accessories_6/sport_accessories.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 7,
+  "fields": {
+    "category": 7,
+    "src": "categories/Equipment_7/equipment.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.categoryimage",
+  "pk": 8,
+  "fields": {
+    "category": 8,
+    "src": "categories/TestCategory_8/v824-te-17.jpg",
+    "alt": "image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "src": "products/Laptop_1/laptop_1.jpg",
+    "alt": "Laptop image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 2,
+  "fields": {
+    "product": 1,
+    "src": "products/Laptop_1/laptop_2.jpg",
+    "alt": "Laptop image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 3,
+  "fields": {
+    "product": 2,
+    "src": "products/Smartphone_2/smartphone-3.jpg",
+    "alt": "Smartphone image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 4,
+  "fields": {
+    "product": 2,
+    "src": "products/Smartphone_2/smartphone-1.jpg",
+    "alt": "Smartphone image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 5,
+  "fields": {
+    "product": 2,
+    "src": "products/Smartphone_2/smartphone-2.jpg",
+    "alt": "Smartphone image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 6,
+  "fields": {
+    "product": 3,
+    "src": "products/Running Shoes_3/running_shoes_2.jpg",
+    "alt": "Running Shoes image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 7,
+  "fields": {
+    "product": 3,
+    "src": "products/Running Shoes_3/running_shoes_1.jpg",
+    "alt": "Running Shoes image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 8,
+  "fields": {
+    "product": 3,
+    "src": "products/Running Shoes_3/running_shoes_3.jpg",
+    "alt": "Running Shoes image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 9,
+  "fields": {
+    "product": 4,
+    "src": "products/Fitness Tracker_4/fitness_tracker_2.jpg",
+    "alt": "Fitness Tracker image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 10,
+  "fields": {
+    "product": 4,
+    "src": "products/Fitness Tracker_4/fitness_tracker_1.jpg",
+    "alt": "Fitness Tracker image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 11,
+  "fields": {
+    "product": 4,
+    "src": "products/Fitness Tracker_4/fitness_tracker_3.jpg",
+    "alt": "Fitness Tracker image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 12,
+  "fields": {
+    "product": 5,
+    "src": "products/Yoga Mat_5/yoga_mat_3.jpg",
+    "alt": "Yoga Mat image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 13,
+  "fields": {
+    "product": 5,
+    "src": "products/Yoga Mat_5/yoga_mat_1.jpg",
+    "alt": "Yoga Mat image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 14,
+  "fields": {
+    "product": 5,
+    "src": "products/Yoga Mat_5/yoga_mat_2.jpg",
+    "alt": "Yoga Mat image"
+  }
+},
+{
+  "model": "api_product.productimage",
+  "pk": 15,
+  "fields": {
+    "product": 6,
+    "src": "products/TestProduct_6/v824-te-17.jpg",
+    "alt": "test product image"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 1,
+  "fields": {
+    "name": "computers"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 2,
+  "fields": {
+    "name": "portable"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 3,
+  "fields": {
+    "name": "mobile"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 4,
+  "fields": {
+    "name": "touchscreen"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 5,
+  "fields": {
+    "name": "shoes"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 6,
+  "fields": {
+    "name": "running"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 7,
+  "fields": {
+    "name": "tracker"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 8,
+  "fields": {
+    "name": "fitness"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 9,
+  "fields": {
+    "name": "yoga"
+  }
+},
+{
+  "model": "api_product.tag",
+  "pk": 10,
+  "fields": {
+    "name": "mat"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "name": "CPU",
+    "value": "Intel i7"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 2,
+  "fields": {
+    "product": 1,
+    "name": "RAM",
+    "value": "16GB"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 3,
+  "fields": {
+    "product": 2,
+    "name": "Screen",
+    "value": "6.5 inch"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 4,
+  "fields": {
+    "product": 2,
+    "name": "Battery",
+    "value": "4000mAh"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 5,
+  "fields": {
+    "product": 3,
+    "name": "Size",
+    "value": "42"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 6,
+  "fields": {
+    "product": 3,
+    "name": "Color",
+    "value": "Red"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 7,
+  "fields": {
+    "product": 4,
+    "name": "Battery Life",
+    "value": "7 days"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 8,
+  "fields": {
+    "product": 5,
+    "name": "Thickness",
+    "value": "6mm"
+  }
+},
+{
+  "model": "api_product.specification",
+  "pk": 9,
+  "fields": {
+    "product": 6,
+    "name": "test specification",
+    "value": "test value"
+  }
+}
+]

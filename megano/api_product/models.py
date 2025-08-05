@@ -1,9 +1,9 @@
 from decimal import Decimal
 
 from django.db import models
-from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
+from django.conf import settings
 
 from common_mode.models import SoftDeleteModel
 
@@ -180,7 +180,7 @@ class Review(models.Model):
         verbose_name="Товар",
     )
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="reviews",
         verbose_name="Пользователь",
