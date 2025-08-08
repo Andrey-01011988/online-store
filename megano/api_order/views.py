@@ -137,7 +137,27 @@ class OrderDetailAPIView(APIView):
                 else:
                     logger.debug("\nuser is authenticated\n")
                     logger.debug("\nstart get one order without session_key id=%s0\n", pk)
-                    order = Order.objects.get(id=pk)
+                    order = (
+                        Order.objects.select_related("user")
+                        .prefetch_related(
+                            Prefetch(
+                                "items__product",
+                                queryset=Product.objects.prefetch_related(
+                                    Prefetch(
+                                        "images",
+                                        queryset=ProductImage.objects.all(),
+                                        to_attr='prefetched_images',
+                                    ),
+                                    Prefetch(
+                                        "tags",
+                                        queryset=Tag.objects.all(),
+                                        to_attr='prefetched_tags',
+                                    ),
+                                ),
+                            )
+                        )
+                        .get(id=pk)
+                    )
                     logger.debug("\norder without session_key id=%s found\n", pk)
                     if order.user is None:
                         order.user = request.user

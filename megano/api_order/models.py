@@ -2,8 +2,10 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
+from common_mode.models import SoftDeleteModel
 
-class Order(models.Model):
+
+class Order(SoftDeleteModel):
     """
     Модель заказа
     """
@@ -81,7 +83,13 @@ class Order(models.Model):
             if not delivery_settings:
                 raise ValidationError("Настройки доставки не найдены")
 
-            if self.deliveryType == "express":
+            # Проверяем, есть ли в заказе товары с платной доставкой
+            has_paid_delivery = self.items.filter(product__freeDelivery=False).exists()
+
+            if not has_paid_delivery and self.deliveryType != "express":
+                return 0
+
+            elif self.deliveryType == "express":
                 return delivery_settings.EXPRESS_DELIVERY_COST
             elif self.get_total_cost() < delivery_settings.FREE_DELIVERY_THRESHOLD:
                 return delivery_settings.REGULAR_DELIVERY_COST

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils import timezone
 from .models import Order, OrderItem, DeliverySettings
 
 
@@ -19,6 +20,8 @@ class OrderAdmin(admin.ModelAdmin):
         "status",
         "city",
         "address",
+        "is_deleted",
+        "deleted_at",
     )
     list_display_links = (
         "id",
@@ -47,6 +50,24 @@ class OrderAdmin(admin.ModelAdmin):
         "city",
         "address",
     )
+    actions = ["soft_delete", "hard_delete", "restore"]
+
+    def soft_delete(self, request, queryset):
+        queryset.update(is_deleted=True, deleted_at=timezone.now())
+
+    def hard_delete(self, request, queryset):
+        queryset.delete()
+
+    def restore(self, request, queryset):
+        queryset.update(is_deleted=False, deleted_at=None)
+
+    soft_delete.short_description = "Пометить как удаленные"
+    hard_delete.short_description = "Удалить навсегда"
+    restore.short_description = "Восстановить"
+
+    def get_queryset(self, request):
+        qs = Order.objects.all_with_deleted().select_related("user")
+        return qs
 
 
 @admin.register(DeliverySettings)

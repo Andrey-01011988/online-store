@@ -1,7 +1,6 @@
 import logging
 
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
 
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,7 +9,7 @@ from rest_framework.views import APIView
 
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResponse
 
-from .models import Profile
+from .models import Profile, User
 from .serializers import (
     SignInSerializer,
     SignUpSerializer,
@@ -32,9 +31,7 @@ class SignUpView(APIView):
         request=SignUpSerializer,
         responses={
             201: OpenApiResponse(description="Created", response=None),
-            400: OpenApiResponse(
-                description="Validation error or user exists", response=None
-            ),
+            400: OpenApiResponse(description="Validation error or user exists", response=None),
             500: OpenApiResponse(description="Internal server error", response=None),
         },
         description="Регистрация нового пользователя. JSON передаётся как строка в form-data.",
@@ -61,9 +58,7 @@ class SignUpView(APIView):
                     user = authenticate(request, username=username, password=password)
                     if user is not None:
                         login(request, user)
-                    logger.info(
-                        f"User created: {username}", extra={"tags": ["registration"]}
-                    )
+                    logger.info(f"User created: {username}", extra={"tags": ["registration"]})
                     return Response(status=status.HTTP_201_CREATED)
                 except Exception as e:
                     logger.error(
@@ -83,9 +78,7 @@ class SignUpView(APIView):
                 f"Invalid wrapper data: {wrapper_serializer.errors}",
                 extra={"tags": ["invalid_input"]},
             )
-            return Response(
-                wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["auth"])
@@ -134,9 +127,7 @@ class SignInView(APIView):
                 f"Invalid wrapper data: {wrapper_serializer.errors}",
                 extra={"tags": ["invalid_input"]},
             )
-            return Response(
-                wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(wrapper_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["auth"])
@@ -166,10 +157,7 @@ class ProfileView(APIView):
         description="Получение профиля пользователя",
     )
     def get(self, request):
-        profile = (
-            Profile.objects.select_related("user", "avatar")
-            .get(user=request.user)
-        )
+        profile = Profile.objects.select_related("user", "avatar").get(user=request.user)
         serializer = self.serializer_class(profile, context={"request": request})
         logger.debug("GET profile data: %s", serializer.data)
         return Response(serializer.data)
@@ -184,10 +172,7 @@ class ProfileView(APIView):
     )
     def post(self, request):
         logger.debug("POST data: %s", request.data)
-        profile = (
-            Profile.objects.select_related("user", "avatar")
-            .get(user=request.user)
-        )
+        profile = Profile.objects.select_related("user", "avatar").get(user=request.user)
         serializer = self.serializer_class(
             instance=profile,
             data=request.data,
@@ -241,9 +226,7 @@ class ChangePasswordView(APIView):
         description="Изменение пароля пользователя",
     )
     def post(self, request):
-        serializer = self.serializer_class(
-            data=request.data, context={"request": request}
-        )
+        serializer = self.serializer_class(data=request.data, context={"request": request})
         logger.debug("POST data: %s", request.data)
         if serializer.is_valid():
             user = request.user
@@ -252,9 +235,7 @@ class ChangePasswordView(APIView):
                 user.set_password(new_password)
                 user.save()
                 logger.info("Password changed for user: %s", user.username)
-                return Response(
-                    {"detail": "Пароль успешно изменён"}, status=status.HTTP_200_OK
-                )
+                return Response({"detail": "Пароль успешно изменён"}, status=status.HTTP_200_OK)
             else:
                 return Response(
                     {"newPassword": ["Новый пароль не должен совпадать с текущим"]},
@@ -307,9 +288,7 @@ class ProfileAvatarUpdateView(APIView):
                 logger.info("Avatar updated: %s", avatar)
             else:
                 serializer.save(profile=profile)
-            return Response(
-                {"detail": "Аватар успешно обновлён"}, status=status.HTTP_200_OK
-            )
+            return Response({"detail": "Аватар успешно обновлён"}, status=status.HTTP_200_OK)
         else:
             logger.error("Avatar upload validation errors: %s", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
