@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +24,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^v050#+g#4e)flx#8!nx@u9w&=gw07w%@s@^y!s&x18m%!$s92'
+# SECRET_KEY = 'django-insecure-^v050#+g#4e)flx#8!nx@u9w&=gw07w%@s@^y!s&x18m%!$s92'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-for-dev-only-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
+allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = allowed_hosts_str.split(',') if allowed_hosts_str else []
 
 AUTH_USER_MODEL = 'api_auth.User'
 
@@ -89,12 +96,33 @@ WSGI_APPLICATION = 'megano.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db_megano.sqlite3',
+#     }
+# }
+
+DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
+DB_NAME = os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3')
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db_megano.sqlite3',
+        'ENGINE': DB_ENGINE,
+        'NAME': DB_NAME,
     }
 }
+
+# Если используется Postgres, добавляем дополнительные параметры
+if DB_ENGINE == 'django.db.backends.postgresql':
+    DATABASES['default'].update(
+        {
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    )
 
 
 # Password validation
